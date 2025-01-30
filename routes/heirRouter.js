@@ -1,22 +1,13 @@
 // routes/authRouter.js
 const express = require("express");
-// const mysql = require('mysql2');
-const { getDataFromDB, insertDataToDB, pool } = require("../config/config_db");
+const {relationController} = require('../controllers/relation_controller')
 
 const router = express.Router();
 
-router.get("/relation", async (req, res) => {
-  try {
-    const query = "SELECT * FROM relations";
-    const results = await getDataFromDB(query);
-    res.json(results);
-  } catch (err) {
-    console.error("Error executing query: " + err.message);
-    return res.status(500).send("Database query error");
-  }
-});
+router.get("/relation", relationController);
 
 // -------------------------------------------- Post --------------------------------------------
+// create heir
 router.post("/", async (req, res) => {
   const heirData = req.body;
   console.log("heir:", heirData);

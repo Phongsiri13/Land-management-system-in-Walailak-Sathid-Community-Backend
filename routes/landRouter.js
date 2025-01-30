@@ -1,11 +1,20 @@
 // routes/authRouter.js
 const express = require("express");
 // const mysql = require("mysql2");
-const {getDataFromDB, insertDataToDB, getSearchDataFromDB} = require('../config/config_db')
+const {
+  getDataFromDB,
+  insertDataToDB,
+  getSearchDataFromDB,
+} = require("../config/config_db");
 const router = express.Router();
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
+const { addLandController } = require("../controllers/land_controller");
+const {
+  landStatusController,
+} = require("../controllers/landStatus_controller");
+const { soiController } = require("../controllers/soi_controller");
 // const checkRole = require("../middlewares/checkRole");
 
 // Configure multer for file uploads
@@ -29,56 +38,6 @@ const uploadLives = multer({
   limits: { files: file_limit },
 });
 
-router.post("/", async (req, res) => {
-  console.log('land-post')
-  const formLand = req.body;
-  console.log('land:',formLand); // Log the form data for debugging
-  const query = `
-    INSERT INTO land (
-      tf_number, spk_area, number, volume, l_house_number, current_soi, 
-      rai, ngan, square_wa, l_district, l_village_number, notation, 
-      current_land_status, id_card
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-  // db field names
-  const landValues = [
-    formLand.tf_number,
-    formLand.spk_area,
-    formLand.number,
-    formLand.volume,
-    formLand.address,
-    formLand.soi,
-    parseFloat(formLand.rai) || null,
-    parseFloat(formLand.ngan) || null,
-    formLand.square_wa,
-    formLand.district,
-    formLand.village,
-    // parseFloat(formLand.long) || null,
-    // parseFloat(formLand.lat) || null,
-    formLand.notation,
-    formLand.land_status,
-    formLand.id_card,
-  ];
-
-  console.log('land-x:',landValues, "count:",landValues.length);
-
-  try {
-    const results = await insertDataToDB(query, landValues);
-    console.log("insert-result:", results);
-    if (results) {
-      // console.log("insert-people successfully");
-      return res
-        .status(200)
-        .send({ message: "ข้อมูลของคุณได้ถูกบันทึกเรียบร้อยแล้ว" });
-    }
-    // ถ้า results ไม่เป็น true
-    console.error("Database error: Data insertion failed");
-    return res.status(422).send({ message: "เพิ่มข้อมูลไม่สำเร็จ" });
-  } catch (err) {
-    console.error("Error inserting data: ", err);
-    res.status(500).send("Error saving data");
-  }
-});
-
 router.get("/complete_land/:id", (req, res) => {
   // Get the id from the URL parameter
   const landId = req.params.id;
@@ -100,7 +59,7 @@ WHERE l.id_land = ?;
       console.log(results[0]);
       if (results.length > 0) {
         console.log(results[0]);
-        if(results[0].id_card){
+        if (results[0].id_card) {
           connection.query(
             `
         SELECT *
@@ -140,12 +99,13 @@ WHERE l.id_land = ?;
                 );
               } else {
                 // ถ้าไม่พบข้อมูล
-                return res.status(404).send("No data found for the given ID card");
+                return res
+                  .status(404)
+                  .send("No data found for the given ID card");
               }
             }
           );
-        }
-        else{
+        } else {
           land_and_people_data.push({
             landInformation: results,
             peopleInformation: [],
@@ -200,50 +160,58 @@ ORDER BY l.created_at DESC;
   );
 });
 
+function convertNganAndSquareWaToRai(ngan, squareWa) {
+  const totalSquareWa = ngan * 100 + squareWa; // แปลงงานและตารางวาเป็นตารางวาทั้งหมด
+  const rai = totalSquareWa / 400; // แปลงตารางวาเป็นไร่ (1 ไร่ = 400 ตารางวา)
+  return rai; // ส่งค่าที่แปลงเสร็จออกมา
+}
+
+function concealmentFormat(phoneNumber, word_count=6) {
+  const regex = new RegExp(`^(\\d{${word_count}})(\\d{4})$`);
+  return phoneNumber.replace(regex, `xxxxxx$2`);
+}
+
 // Search route
-router.get('/search', async (req, res) => {
+router.get("/search", async (req, res) => {
   const query = req.query.q; // รับค่า query 'q' ที่ส่งมาใน URL
   if (!query) {
     return res.status(400).json({ message: 'Query parameter "q" is required' });
   }
 
-  const query_land = `SELECT * FROM land WHERE tf_number = ? LIMIT 1`;
-  const values = [query]
-  
+  const query_land = `SELECT tf_number, id_card, number, spk_area, volume, 
+  l_district, rai, ngan, square_wa FROM land WHERE tf_number = ? LIMIT 1`;
+  const values = [query];
+
   try {
     const results = await getSearchDataFromDB(query_land, values);
-    res.json(results);
-  } catch (err) {
-    console.error("Error executing query: " + err.message);
-    return res.status(500).send("Database query error");
-    // res.status(404).send("No data found for the given ID card");
-  }
-});
+    if(results[0].ngan && results[0].square_wa){
+      const cal_to_rai = convertNganAndSquareWaToRai(results[0].ngan, results[0].square_wa);
+      results[0]["total_rai"] = cal_to_rai;
+    }
+    results[0].spk_area = concealmentFormat(results[0].spk_area, 5);
+    console.log("result:",results)
+    console.log("result-id:",results[0].id_card)
 
-router.get("/sois", async (req, res) => {
+    if (results) {
+      const query_people = `SELECT phone_number FROM people WHERE ID_CARD = ?`;
+      const values_p = [results[0].id_card];
+      const result = await getSearchDataFromDB(query_people, values_p);
+      results[0].phone_number = concealmentFormat(result[0].phone_number) || null;
+    }
 
-  const query = "SELECT id_alley FROM alley";
-  
-  try {
-    const results = await getDataFromDB(query);
-    res.json(results);
-  } catch (err) {
-    console.error("Error executing query: " + err.message);
-    return res.status(500).send("Database query error");
-    // res.status(404).send("No data found for the given ID card");
-  }
-});
-
-router.get("/land_status", async (req, res) => {
-  const query = "SELECT * FROM land_status ORDER BY ID_land_status";
-  try {
-    const results = await getDataFromDB(query);
-    res.json(results);
+    res.json({results});
   } catch (err) {
     console.error("Error executing query: " + err.message);
     return res.status(500).send("Database query error");
   }
 });
+
+router.get("/sois", soiController);
+
+router.get("/land_status", landStatusController);
+
+// Add a new land
+router.post("/", addLandController);
 
 // upload lives image
 router.post(
@@ -304,4 +272,5 @@ router.get("/upload_lives", (req, res) => {
     });
   });
 });
+
 module.exports = router;

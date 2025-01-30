@@ -1,5 +1,4 @@
 const express = require("express");
-// const db_config = require("./config/config_db");
 const cors = require("cors");
 const session = require("express-session");
 const Memorystore = require("memorystore")(session); // ใช้ memorystore กับ express-session
@@ -7,29 +6,12 @@ const checkRole = require("./middlewares/checkRole");
 
 // routers
 const loginRouter = require("./routes/loginRouter");
-const peopleRouter = require("./routes/peopleRouter");
+const peopleRouter = require("./routes/citizenRouter");
 const landRouter = require("./routes/landRouter");
 const heirRouter = require("./routes/heirRouter");
 
 const app = express();
 const port = 3000;
-
-// old session
-// app.use(
-//   session({
-//     secret: "xaxa123",
-//     resave: false,
-//     saveUninitialized: true,
-//     cookie: { secure: false }, // ใช้ true หากใช้ https
-//   })
-// );
-
-// app.use(
-//   cors({
-//     origin: "*", // ที่อยู่ของ Vue.js client
-//     credentials: true, // อนุญาตให้ส่ง cookies
-//   })
-// ); 
 
 app.use(
   cors({
@@ -58,31 +40,12 @@ app.use(
   })
 );
 
-// app.use(cors());
 app.use(express.json());
-
-// console.log(req.connection.remoteAddress); // หรือ req.ip
-app.get("/detect", (req, res) => {
-  const userAgent = req.headers["user-agent"];
-  const language = req.headers["accept-language"];
-  const connectionType = req.headers["connection"];
-  const cookies = req.headers['cookie'];
-  
-  console.log("-".repeat(100));
-  
-  console.log(cookies || 'no cookies');
-  console.log(language);
-  console.log(userAgent);
-  console.log(connectionType);
-
-  console.log("-".repeat(100));
-
-  res.send("Detecting user");
-});
 
 // ให้บริการไฟล์จากโฟลเดอร์ 'uploads'
 app.use("/uploads", checkRole, express.static("uploads"));
 
+// Data management
 app.use("/login", loginRouter);
 app.use("/land", landRouter);
 app.use("/people", peopleRouter);
@@ -95,6 +58,7 @@ function isAuthenticated(req, res, next) {
     res.status(401).send("Unauthorized"); // ถ้าไม่มี session
   }
 }
+
 // get roles
 app.get("/api/getUserRole", isAuthenticated, (req, res) => {
   console.log("#".repeat(50));

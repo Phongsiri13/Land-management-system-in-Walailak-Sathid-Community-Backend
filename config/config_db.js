@@ -1,5 +1,6 @@
 // db config
 const mariadb = require("mariadb");
+
 const db_config = {};
 db_config.host = "localhost";
 db_config.user = "root";
@@ -14,7 +15,7 @@ const connection = mariadb.createPool({
   database: db_config.database,
 });
 
-// สร้าง connection pool
+// Create the connection pool
 const pool = mariadb.createPool(db_config);
 
 // Get all
@@ -44,7 +45,7 @@ async function getDataFromDB(query) {
   }
 }
 
-// Get search 
+// Get search one
 async function getSearchDataFromDB(query, param) {
   let conn;
   try {
@@ -71,6 +72,7 @@ async function getSearchDataFromDB(query, param) {
   }
 }
 
+// Insert a new data
 async function insertDataToDB(query, body) {
   let conn;
   try {
@@ -123,5 +125,5 @@ console.log('param:',body[0])
   }
 }
 
-// ส่งออก pool
+// Export pool
 module.exports = { getDataFromDB, insertDataToDB, getLikeSearchFromDB, pool, getSearchDataFromDB};
