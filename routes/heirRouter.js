@@ -1,6 +1,7 @@
 // routes/authRouter.js
 const express = require("express");
 const {relationController} = require('../controllers/relation_controller')
+const {pool} = require('../config/config_db')
 
 const router = express.Router();
 
