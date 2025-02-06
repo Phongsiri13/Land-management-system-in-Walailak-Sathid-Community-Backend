@@ -9,6 +9,8 @@ const loginRouter = require("./routes/loginRouter");
 const peopleRouter = require("./routes/citizenRouter");
 const landRouter = require("./routes/landRouter");
 const heirRouter = require("./routes/heirRouter");
+const statusRouter = require("./routes/statusRouter");
+const documentLandTypeRouter = require("./routes/documentTypeRouter");
 
 const app = express();
 const port = 3000;
@@ -48,8 +50,10 @@ app.use("/uploads", checkRole, express.static("uploads"));
 // Data management
 app.use("/login", loginRouter);
 app.use("/land", landRouter);
-app.use("/people", peopleRouter);
-app.use("/heir", heirRouter)
+app.use("/citizen", peopleRouter);
+app.use("/heir", heirRouter);
+app.use("/manage_status_info", statusRouter);
+app.use("/manage_land_document_type", documentLandTypeRouter);
 
 function isAuthenticated(req, res, next) {
   if (req.session.user) {

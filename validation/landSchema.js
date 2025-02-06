@@ -6,7 +6,7 @@ const landSchema = Joi.object({
   number: Joi.string().required().max(5), // หมายเลข (string)
   volume: Joi.string().required().max(5), // ปริมาณ (string)
   address: Joi.string().required().max(6), // ที่อยู่ (string)
-  soi: Joi.number().integer().min(0).min(13).required(), // ซอย (number, ต้องเป็นจำนวนเต็มบวก)
+  soi: Joi.number().integer().min(0).max(13).required(), // ซอย (number, ต้องเป็นจำนวนเต็มบวก)
   rai: Joi.number().integer().min(0).max(5), // ไร่ (0-5 ไร่)
   ngan: Joi.number().integer().min(0).max(3.9999), // งาน (0-3 งาน)
   square_wa: Joi.number().integer().min(0).max(99.9999), // ตารางวา (0-99 ตารางวา)

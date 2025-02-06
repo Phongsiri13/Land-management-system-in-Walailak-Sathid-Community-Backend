@@ -25,6 +25,22 @@ const addCitizen = async (citizenData) => {
   }
 };
 
+// page and limit
+const getCitizenPage = async (amount,page) => {
+  console.log('param:',amount, ' : ', page)
+  try {
+    const result = await citizenModel.citizenAmountPage(page,amount);
+    console.log('re-sult:',result)
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${err.message}`);
+  }
+}
+
 module.exports = {
   addCitizen,
+  getCitizenPage
 };

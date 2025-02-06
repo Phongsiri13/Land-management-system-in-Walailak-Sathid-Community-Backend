@@ -10,7 +10,7 @@ const router = express.Router();
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const { addLandController } = require("../controllers/land_controller");
+const { addLandController, getLandAmountPageCTL, getLandIdCTL} = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
@@ -63,7 +63,7 @@ WHERE l.id_land = ?;
           connection.query(
             `
         SELECT *
-  FROM people p
+  FROM citizen p
   JOIN prefix pf ON p.prefix_id = pf.prefix_id
   WHERE p.ID_CARD = ?;
         `,
@@ -123,42 +123,7 @@ WHERE l.id_land = ?;
   );
 });
 
-router.get("/complete_land", (req, res) => {
-  connection.query(
-    `
-SELECT 
-    prefix_name, 
-    first_name, 
-    last_name, 
-    p.ID_CARD AS "ID", 
-    land_status_name, 
-    l.id_land, 
-    current_soi, 
-    l.number, 
-    p.phone_number,
-    l.tf_number,
-    l.spk_area
-FROM land l
-LEFT JOIN people p ON l.id_card = p.ID_CARD
-LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
-LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
-ORDER BY l.created_at DESC;
-`,
-    (err, results) => {
-      if (err) {
-        console.error("Error executing query: " + err.stack);
-        return res.status(500).send("Database query error");
-      }
-      if (results.length > 0) {
-        // ส่งข้อมูลที่พบกลับไป
-        res.json(results);
-      } else {
-        // ถ้าไม่พบข้อมูล
-        res.status(404).send("No data found for the given ID card");
-      }
-    }
-  );
-});
+router.get("/complete_land/:amount/:page", getLandAmountPageCTL);
 
 function convertNganAndSquareWaToRai(ngan, squareWa) {
   const totalSquareWa = ngan * 100 + squareWa; // แปลงงานและตารางวาเป็นตารางวาทั้งหมด
@@ -193,7 +158,7 @@ router.get("/search", async (req, res) => {
     console.log("result-id:",results[0].id_card)
 
     if (results) {
-      const query_people = `SELECT phone_number FROM people WHERE ID_CARD = ?`;
+      const query_people = `SELECT phone_number FROM citizen WHERE ID_CARD = ?`;
       const values_p = [results[0].id_card];
       const result = await getSearchDataFromDB(query_people, values_p);
       results[0].phone_number = concealmentFormat(result[0].phone_number) || null;
@@ -212,6 +177,9 @@ router.get("/land_status", landStatusController);
 
 // Add a new land
 router.post("/", addLandController);
+
+// Get 
+router.get("/:id", getLandIdCTL);
 
 // upload lives image
 router.post(

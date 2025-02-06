@@ -1,19 +1,20 @@
 const landModel = require("../model/landModel");
 const landSchema = require("../validation/landSchema");
 
+// SV = service
+
 // Mange adding Land
 const addLand = async (landData) => {
   try {
     // Logic before sending to db
     console.log("land-data:", landData);
-    // ✅ ตรวจสอบข้อมูลด้วย Joi ก่อน
+    // ตรวจสอบข้อมูลด้วย Joi ก่อน
     const { error, value } = landSchema.validate(landData);
     if (error) {
       throw new Error(`Validation Error: ${error.details[0].message}`);
     }
 
     // Detect total of rai
-
 
     // ✅ แปลงค่าตัวเลขให้เป็น float หรือ null (กรณีไม่มีค่า)
     const values = [
@@ -33,7 +34,7 @@ const addLand = async (landData) => {
       value.id_card,
       value.long,
       value.lat,
-      1
+      '1'
     ];
 
     // บันทึกข้อมูลลงฐานข้อมูล
@@ -56,6 +57,20 @@ const addLand = async (landData) => {
   }
 };
 
+// page and limit
+const getLandPage = async (landData) => {
+  try {
+    const result = await landModel.landAmountPage(1,10);
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${err.message}`);
+  }
+}
+
 module.exports = {
   addLand,
+  getLandPage,
 };
