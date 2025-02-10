@@ -12,12 +12,54 @@ const prefixModel = async () => {
   return results;
 };
 
+// --------------------------------------- Start point statusLand ---------------------------------------
+const getOneLandUse = async (land_id) => {
+  const query = `SELECT * FROM land_use WHERE land_id = ?;`;
+  const results = await getSearchOneDataFromDB(query, land_id);
+  return results;
+};
+
+// --------------------------------------- end relation ---------------------------------------
+
+// --------------------------------------- Start point relation ---------------------------------------
+
 const relationModel = async () => {
   const query = "SELECT * FROM relations";
   const results = await getDataAllFromDB(query);
   console.log(results);
   return results;
 };
+
+const getOneRelationModel = async (status_id) => {
+  const query = `SELECT * FROM relations WHERE id = ?;`;
+  const results = await getSearchOneDataFromDB(query, status_id);
+  return results;
+};
+
+const createRelationModel = async (status_data) => {
+  console.log(status_data);
+  const query = `
+  INSERT INTO relations (label) 
+  VALUES (?);`;
+  const results = await insertDataToDB(query, status_data);
+  return results;
+};
+
+const updateRelationModel = async (values) => {
+  const query = `UPDATE relations 
+    SET label = ? 
+    WHERE id = ?;`;
+  const results = await updateOneDataToDB(query, values);
+  return results;
+};
+
+const deleteRelationModel = async (status_id) => {
+  const query = `DELETE FROM relations WHERE id = ?;`;
+  const results = await removeDataToDB(query, status_id);
+  return results;
+};
+
+// --------------------------------------- end relation ---------------------------------------
 
 // --------------------------------------- Start point statusLand ---------------------------------------
 
@@ -116,5 +158,10 @@ module.exports = {
   getOneDcLandTypeModel,
   createDcLandTypeModel,
   deleteDcLandTypeModel,
-  updateDcLandTypeModel
+  updateDcLandTypeModel,
+  getOneRelationModel,
+  createRelationModel,
+  updateRelationModel,
+  deleteRelationModel,
+  getOneLandUse
 };

@@ -1,5 +1,5 @@
 const landModel = require("../model/landModel");
-const landSchema = require("../validation/landSchema");
+const landSchemaCheck = require("../validation/landSchema");
 
 // SV = service
 
@@ -9,7 +9,7 @@ const addLand = async (landData) => {
     // Logic before sending to db
     console.log("land-data:", landData);
     // ตรวจสอบข้อมูลด้วย Joi ก่อน
-    const { error, value } = landSchema.validate(landData);
+    const { error, value } = landSchemaCheck.landSchema.validate(landData);
     if (error) {
       throw new Error(`Validation Error: ${error.details[0].message}`);
     }
@@ -34,33 +34,78 @@ const addLand = async (landData) => {
       value.id_card,
       value.long,
       value.lat,
-      '1'
+      "1",
     ];
 
     // บันทึกข้อมูลลงฐานข้อมูล
     const result = await landModel.addLand(values);
-    console.log("result:",result)
+    console.log("result:", result);
+    if ((result.status.statusCode = 200)) {
+      return result;
+    }
+    if ((result.status.statusCode = 409)) {
+      return result;
+    }
+    return result;
+  } catch (err) {
+    console.log("err:", err);
+    throw new Error(`Error adding citizen: ${err.message}`);
+  }
+};
+
+const UpdateLand = async (landData, id) => {
+  try {
+    // Logic before sending to db
+    console.log("land-data:", landData);
+    // ตรวจสอบข้อมูลด้วย Joi ก่อน
+    const { error, value } = landSchemaCheck.forceLandSchema.validate(landData);
+    if (error) {
+      throw new Error(`Validation Error: ${error.details[0].message}`);
+    }
+
+    // Detect total of rai
+
+    // ✅ แปลงค่าตัวเลขให้เป็น float หรือ null (กรณีไม่มีค่า)
+    const values = [
+      value.address,
+      value.soi,
+      parseFloat(value.rai) || null,
+      parseFloat(value.ngan) || null,
+      parseFloat(value.square_wa) || null,
+      value.district,
+      value.village,
+      value.notation,
+      value.land_status,
+      value.id_card,
+      value.long,
+      value.lat,
+      id,
+    ];
+
+    // บันทึกข้อมูลลงฐานข้อมูล
+    const result = await landModel.updateLandOne(values);
+    console.log("result:", result);
     // แจ้งเตือนเมื่อสำเร็จ
     if (result) {
       // ตรวจสอบว่ามีแถวถูกเพิ่มจริง
       console.log("เพิ่มข้อมูลที่ดินสำเร็จ!");
       return {
         success: true,
-        message: "เพิ่มข้อมูลที่ดินสำเร็จ!",
+        message: "อัพเดทข้อมูลที่ดินสำเร็จ!",
       };
     } else {
-      console.log("⚠️ ไม่สามารถเพิ่มข้อมูลได้!");
-      return { success: false, message: "ไม่สามารถเพิ่มข้อมูลได้!" };
+      console.log("ไม่สามารถอัพเดทข้อมูลได้!");
+      return { success: false, message: "ไม่สามารถอัพเดทข้อมูลได้!" };
     }
   } catch (err) {
-    throw new Error(`Error adding citizen: ${err.message}`);
+    throw new Error(`Error updating citizen: ${err.message}`);
   }
 };
 
 // page and limit
 const getLandPage = async (landData) => {
   try {
-    const result = await landModel.landAmountPage(1,10);
+    const result = await landModel.landAmountPage(1, 10);
     return {
       success: true,
       data: result,
@@ -68,9 +113,10 @@ const getLandPage = async (landData) => {
   } catch (error) {
     throw new Error(`Error adding citizen: ${err.message}`);
   }
-}
+};
 
 module.exports = {
   addLand,
   getLandPage,
+  UpdateLand,
 };

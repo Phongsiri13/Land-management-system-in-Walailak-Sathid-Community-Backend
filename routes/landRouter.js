@@ -10,12 +10,12 @@ const router = express.Router();
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const { addLandController, getLandAmountPageCTL, getLandIdCTL} = require("../controllers/land_controller");
+const { addLandController, getLandAmountPageCTL, deleteLandByActiveCTL,
+  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL} = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
 const { soiController } = require("../controllers/soi_controller");
-// const checkRole = require("../middlewares/checkRole");
 
 // Configure multer for file uploads
 // ตั้งค่า storage ของ multer
@@ -37,6 +37,7 @@ const uploadLives = multer({
   storage: liveStorage,
   limits: { files: file_limit },
 });
+
 
 router.get("/complete_land/:id", (req, res) => {
   // Get the id from the URL parameter
@@ -175,11 +176,19 @@ router.get("/sois", soiController);
 
 router.get("/land_status", landStatusController);
 
+router.get("/active/:id", getLandActiveCTL);
+router.delete("/active/:id", deleteLandByActiveCTL);
+
 // Add a new land
 router.post("/", addLandController);
 
-// Get 
+// Update the land is selected
+router.put("/:id", updateLandCTL);
+
+// Get One
 router.get("/:id", getLandIdCTL);
+
+
 
 // upload lives image
 router.post(
@@ -240,5 +249,11 @@ router.get("/upload_lives", (req, res) => {
     });
   });
 });
+
+// ---------------------------------------- Land Use ----------------------------------------
+
+router.get("/land_use/:id", getLandUseByIdCTL);
+
+// ---------------------------------------- End Land Use ----------------------------------------
 
 module.exports = router;

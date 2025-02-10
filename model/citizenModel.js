@@ -4,6 +4,7 @@ const {
   getLikeSearchFromDB,
   getSearchOneDataFromDB,
   getSearchDataFromDB,
+  updateOneDataToDB,
 } = require("../config/config_db");
 
 const citizenModel = {
@@ -28,6 +29,36 @@ LIMIT 1;`;
     return results;
   },
 
+  updateCitizenByOne: async (update_data, IDCARD) => {
+    const query_citizen_check = `
+    SELECT ID_CARD FROM citizen WHERE ID_CARD = ? limit 1;
+    `;
+    const result = await getSearchOneDataFromDB(query_citizen_check, [IDCARD]);
+    if (!result) {
+      return new Error("ไม่พบราษฎรคนนี้");
+    }
+    console.log("result:", result);
+
+    const query = `
+    UPDATE citizen 
+    SET 
+        first_name = ?, 
+        last_name = ?, 
+        prefix_id = ?, 
+        birthday = ?, 
+        house_number = ?, 
+        village_number = ?, 
+        district = ?, 
+        phone_number = ?, 
+        soi = ?, 
+        gender = ? 
+    WHERE ID_CARD = ?;
+  `;
+
+    const results = await updateOneDataToDB(query, update_data);
+    return results;
+  },
+
   citizenAmountPage: async (page, size) => {
     const routePage = parseInt(page);
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
@@ -48,6 +79,17 @@ SELECT * FROM citizen
       results,
       totalCount: parseInt(maxLimitResult.Total), // Include the total row count in the response
     };
+  },
+
+  getFullnameCitizen: async (fullname) => {
+    const query = `SELECT ID_CARD, first_name, last_name FROM citizen WHERE first_name = ? AND last_name = ? LIMIT 1`;
+    const resultsHeir = await getSearchDataFromDB(query, fullname);
+    
+    if (resultsHeir.length > 0) {
+      return resultsHeir; // If there are matching heirs, return true
+    } else {
+      return false; // If no match is found, return false
+    }
   },
 };
 

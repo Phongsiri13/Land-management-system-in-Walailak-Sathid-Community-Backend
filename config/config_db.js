@@ -45,6 +45,33 @@ async function getDataAllFromDB(query) {
   }
 }
 
+// Get all
+async function getDataAllWithOneFromDB(query, param) {
+  let conn;
+  try {
+    // ขอ connection จาก pool
+    console.log("Attempting to connect to database...");
+    conn = await pool.getConnection();
+    console.log("Connected successfully!");
+
+    // ใช้ query ที่ได้รับมา
+    const results = await conn.query(query, param);
+    return results;
+  } catch (err) {
+    throw new Error("Error executing query: " + err.stack);
+  } finally {
+    if (conn) {
+      conn.end(); // ปิดการเชื่อมต่อ (แต่ยังคงมี pool เปิดอยู่)
+      console.log("Connection closed");
+      console.log("-------------------------------");
+      //   setTimeout(()=>{
+      //     pool.end(); // ปิด pool หลังใช้งานเสร็จ
+      //     console.log('Connection pool closed.');
+      //   }, 3000)
+    }
+  }
+}
+
 // get page and limit
 async function getDataFromDB(query, [limit, offset]) {
   let conn;
@@ -240,5 +267,6 @@ module.exports = {
   getSearchDataFromDB,
   getSearchOneDataFromDB,
   removeDataToDB,
-  updateOneDataToDB
+  updateOneDataToDB,
+  getDataAllWithOneFromDB
 };

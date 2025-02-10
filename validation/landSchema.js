@@ -25,4 +25,25 @@ const landSchema = Joi.object({
     .required(), // บัตรประชาชน (13 หลัก)
 });
 
-module.exports = landSchema;
+const forceLandSchema = Joi.object({
+  address: Joi.string().max(6), // ที่อยู่ (string)
+  soi: Joi.number().integer().min(0).max(13).required(), // ซอย (number, ต้องเป็นจำนวนเต็มบวก)
+  rai: Joi.number().integer().min(0).max(5), // ไร่ (0-5 ไร่)
+  ngan: Joi.number().integer().min(0).max(3.9999), // งาน (0-3 งาน)
+  square_wa: Joi.number().integer().min(0).max(99.9999), // ตารางวา (0-99 ตารางวา)
+  district: Joi.string(), // อำเภอ (string)
+  village: Joi.string().pattern(/^\d+$/).messages({
+    "string.pattern.base": "หมู่บ้าน ต้องเป็นตัวเลขเท่านั้น",
+  }),
+  long: Joi.number().min(-190).max(190).allow(null), // Validate longitude if needed
+  lat: Joi.number().min(-90).max(90).allow(null), // Validate latitude if needed
+  // หมู่บ้าน (string)
+  notation: Joi.string().allow("").optional(), // บันทึกเพิ่มเติม (string, ไม่บังคับ)
+  land_status: Joi.number().integer().required(), // สถานะที่ดิน (number)
+  id_card: Joi.string()
+    .length(13)
+    .pattern(/^\d{13}$/)
+    .required(), // บัตรประชาชน (13 หลัก)
+});
+
+module.exports = {landSchema, forceLandSchema};

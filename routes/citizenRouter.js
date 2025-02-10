@@ -16,6 +16,8 @@ router.get("/", (req, res) => {
   res.send("People page");
 });
 
+router.put("/:id", citizenController.updateCitizenCTL);
+
 // ค้นหาข้อมูลโดยใช้ LIKE
 router.get("/search", async (req, res) => {
   let searchTerm = req.query.firstname; // รับค่าจาก query string
@@ -45,30 +47,7 @@ router.get("/search", async (req, res) => {
 });
 
 // Search by first-name & last-name
-router.get("/qf/:firstname/:lastname", async (req, res) => {
-  // ดึงค่าจาก URL params
-  const firstname = req.params.firstname;
-  const lastname = req.params.lastname;
-
-  // สร้าง query สำหรับค้นหาข้อมูลในฐานข้อมูล
-  const query = `SELECT ID_CARD, first_name, last_name FROM citizen WHERE first_name = ? AND last_name = ? LIMIT 1`;
-  const values = [firstname, lastname];
-
-  try {
-    // เรียกใช้ฟังก์ชันที่เชื่อมต่อฐานข้อมูลเพื่อดึงข้อมูล
-    const results = await getSearchDataFromDB(query, values);
-
-    // ถ้าพบผลลัพธ์
-    if (results.length > 0) {
-      return res.json(results); // ส่งผลลัพธ์เป็น JSON
-    } else {
-      return res.status(404).send("No records found.");
-    }
-  } catch (err) {
-    console.error("Error:", err);
-    return res.status(500).send("Internal server error.");
-  }
-});
+router.get("/qf", citizenController.getCitizenByFullNameCTL);
 
 // get citizen amount
 router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
@@ -77,13 +56,7 @@ router.get("/prefix", prefixesController);
 
 router.get("/:id_card", citizenController.getCitizenIdCTL);
 
-// -------------------------------------------- END --------------------------------------------
-
-// -------------------------------------------- Post --------------------------------------------
-
 // For adding a citizen
 router.post("/", citizenController.addCitizenController);
-
-// -------------------------------------------- END --------------------------------------------
 
 module.exports = router;

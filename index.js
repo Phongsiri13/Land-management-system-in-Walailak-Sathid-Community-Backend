@@ -11,6 +11,7 @@ const landRouter = require("./routes/landRouter");
 const heirRouter = require("./routes/heirRouter");
 const statusRouter = require("./routes/statusRouter");
 const documentLandTypeRouter = require("./routes/documentTypeRouter");
+const relationRouter = require("./routes/relationRouter");
 
 const app = express();
 const port = 3000;
@@ -54,6 +55,8 @@ app.use("/citizen", peopleRouter);
 app.use("/heir", heirRouter);
 app.use("/manage_status_info", statusRouter);
 app.use("/manage_land_document_type", documentLandTypeRouter);
+app.use("/manage_relation", relationRouter);
+
 
 function isAuthenticated(req, res, next) {
   if (req.session.user) {
