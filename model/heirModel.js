@@ -3,15 +3,58 @@ const {
   insertDataToDB,
   getLikeSearchFromDB,
   getSearchDataFromDB,
+  updateOneDataToDB,
 } = require("../config/config_db");
 
 const heirModel = {
   getHeirById: async (heir_id) => {
     const query = "SELECT * FROM heir WHERE heir_id = ? LIMIT 1";
     const resultsHeir = await getSearchDataFromDB(query, heir_id);
-    return resultsHeir
+    return resultsHeir;
   },
+  // call by heir page
+  getWithRelationByHeir: async (heir_id) => {
+    // มีใครเป็นราษฎรบ้าง
+    const query = `
+    SELECT 
+      h.heir_id, 
+      chr.relationship_id, 
+      r.label, 
+      chr.citizen_id, 
+      c.first_name AS citizen_first_name, 
+      c.last_name AS citizen_last_name
+    FROM heir AS h
+    JOIN citizen_heir_relationship AS chr ON h.heir_id = chr.heir_id
+    JOIN prefix AS p ON h.prefix_id = p.prefix_id
+    JOIN citizen AS c ON chr.citizen_id = c.ID_CARD
+    JOIN relations AS r ON chr.relationship_id = r.id 
+    WHERE h.heir_id = ?;
+`;
 
+    const resultsHeir = await getSearchDataFromDB(query, heir_id);
+    return resultsHeir;
+  },
+  // call by citizen page
+  getWithRelationByCitizen: async (heir_id) => {
+    // มีใครเป็นราษฎรบ้าง
+    const query = `
+      SELECT 
+        h.heir_id, 
+        h.first_name AS heir_first_name, 
+        h.last_name AS heir_last_name,
+        chr.relationship_id, 
+        r.label
+      FROM heir AS h
+      JOIN citizen_heir_relationship AS chr ON h.heir_id = chr.heir_id
+      JOIN prefix AS p ON h.prefix_id = p.prefix_id
+      JOIN citizen AS c ON chr.citizen_id = c.ID_CARD
+      JOIN relations AS r ON chr.relationship_id = r.id 
+      WHERE c.ID_CARD = ?;
+  `;
+
+    const resultsHeir = await getSearchDataFromDB(query, heir_id);
+    return resultsHeir;
+  },
   getFullnameHeir: async (fullname) => {
     console.log("fullname:", fullname);
 
@@ -23,7 +66,6 @@ const heirModel = {
       return false; // If no match is found, return false
     }
   },
-
   getSearchFullHeirs: async (heirList) => {
     console.log("fullname:", heirList);
 
@@ -70,7 +112,6 @@ const heirModel = {
       return { success: true, heirs: foundHeirIds };
     }
   },
-
   addHeir: async (heirData) => {
     const query_heir = `INSERT INTO heir (
       first_name, last_name, prefix_id
@@ -79,7 +120,18 @@ const heirModel = {
     const resultsHeir = await insertDataToDB(query_heir, heirData);
     return resultsHeir;
   },
-
+  updateHeir: async (heirData) => {
+    const query_heir = `
+      UPDATE heir 
+      SET 
+        first_name = ?, 
+        last_name = ?, 
+        prefix_id = ? 
+      WHERE heir_id = ?`; // Assuming there's an id_heir to identify the heir
+    // Step 1: Update heir data in the database
+    const resultsHeir = await updateOneDataToDB(query_heir, heirData);
+    return resultsHeir;
+  },
   addHeirAll: async (data) => {
     const { heirsRelation, citizenIDCARD } = data;
 
@@ -102,6 +154,28 @@ const heirModel = {
     // Execute the batch insert query
     const resultsHeir = await insertDataToDB(query_heir, values);
     return resultsHeir;
+  },
+  heirAmountPage: async (page, size) => {
+    const routePage = parseInt(page);
+    const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
+    const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+
+    // Query the database to get the maximum allowed limit
+    const maxLimitQuery = `SELECT COUNT(heir_id) as Total FROM heir;`;
+    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery);
+    // console.log("max:", parseInt(maxLimitResult.Total));
+
+    const query = `
+SELECT heir.*, prefix.prefix_name
+FROM heir
+JOIN prefix ON heir.prefix_id = prefix.prefix_id
+ORDER BY heir.created_at DESC
+LIMIT ? OFFSET ?;`;
+    const results = await getSearchDataFromDB(query, [limit, offset]);
+    return {
+      results,
+      totalCount: parseInt(maxLimitResult.Total), // Include the total row count in the response
+    };
   },
 };
 

@@ -57,6 +57,20 @@ const getCitizenPage = async (amount,page) => {
   }
 }
 
+const getCitizenHistoryPage = async (amount,page) => {
+  console.log('param:',amount, ' : ', page)
+  try {
+    const result = await citizenModel.citizenHistoryAmountPage(page,amount);
+    console.log('re-sult:',result)
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${error.message}`);
+  }
+}
+
 // updateCitizen
 const updateCitizen = async (citizenData, idCard) => {
   const formPeopleData = citizenData;
@@ -99,5 +113,6 @@ const updateCitizen = async (citizenData, idCard) => {
 module.exports = {
   addCitizen,
   getCitizenPage,
-  updateCitizen
+  updateCitizen,
+  getCitizenHistoryPage
 };

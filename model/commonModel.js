@@ -3,7 +3,8 @@ const {
   insertDataToDB,
   removeDataToDB,
   getSearchOneDataFromDB,
-  updateOneDataToDB
+  updateOneDataToDB,
+  getDataAllWithOneFromDB
 } = require("../config/config_db");
 
 const prefixModel = async () => {
@@ -36,6 +37,12 @@ const getOneRelationModel = async (status_id) => {
   return results;
 };
 
+const getOneRelationActiveModel = async (status_id) => {
+  const query = `SELECT * FROM relations WHERE actived = ?;`;
+  const results = await getSearchOneDataFromDB(query, status_id);
+  return results;
+};
+
 const createRelationModel = async (status_data) => {
   console.log(status_data);
   const query = `
@@ -54,8 +61,11 @@ const updateRelationModel = async (values) => {
 };
 
 const deleteRelationModel = async (status_id) => {
-  const query = `DELETE FROM relations WHERE id = ?;`;
-  const results = await removeDataToDB(query, status_id);
+  const query = `UPDATE relations
+  SET actived = ?
+  WHERE id = ?;
+    `;
+  const results = await updateOneDataToDB(query, status_id);
   return results;
 };
 
@@ -84,9 +94,19 @@ const getOneStatusModel = async (status_id) => {
   return results;
 };
 
+const getOneStatusActiveModel = async (status_id) => {
+  console.log("active:", status_id);
+  const query = `SELECT * FROM land_status WHERE actived = ?;`;
+  const results = await getSearchOneDataFromDB(query, status_id);
+  return results;
+};
+
 const deleteStatusModel = async (status_id) => {
-  const query = `DELETE FROM land_status WHERE ID_land_status = ?;`;
-  const results = await removeDataToDB(query, status_id);
+  console.log("status_id:", status_id);
+  const query = `UPDATE land_status
+SET actived = ?
+WHERE ID_land_status = ?;`;
+  const results = await updateOneDataToDB(query, status_id);
   return results;
 };
 
@@ -145,6 +165,89 @@ const soiModel = async () => {
   return results;
 };
 
+// --------------------------------------- Start dashboard ---------------------------------------
+const getDashboardModel = async () => {
+  const query = `
+  SELECT 
+    SUM(land_use.rubber_tree = '1') AS total_rubber_tree,
+    SUM(land_use.fruit_orchard = '1') AS total_fruit_orchard,
+    SUM(land_use.livestock_farming = '1') AS total_livestock_farming,
+    SUM(land_use.other = '1') AS total_other
+  FROM land
+  JOIN land_use ON land.id_land = land_use.land_id
+  WHERE land.active = '1'
+    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02');
+  `;
+
+  const results = await getDataAllFromDB(query);
+  return results;
+};
+
+const getDashboardTableModel = async () => {
+  const query_land = `
+SELECT 
+  land.current_soi,
+  SUM(CASE WHEN land.current_land_status = 'LS01' THEN 1 ELSE 0 END) AS current_land_status01,
+  SUM(CASE WHEN land.current_land_status = 'LS02' THEN 1 ELSE 0 END) AS current_land_status02,
+  SUM(CASE WHEN land.current_land_status = 'LS03' THEN 1 ELSE 0 END) AS current_land_status03,
+  SUM(CASE WHEN land.current_land_status = 'LS04' THEN 1 ELSE 0 END) AS current_land_status04,
+  SUM(CASE WHEN land.current_land_status = 'LS01' THEN 1 ELSE 0 END) 
+    + SUM(CASE WHEN land.current_land_status = 'LS02' THEN 1 ELSE 0 END) 
+    + SUM(CASE WHEN land.current_land_status = 'LS03' THEN 1 ELSE 0 END) 
+    + SUM(CASE WHEN land.current_land_status = 'LS04' THEN 1 ELSE 0 END) AS total_land_status_count,
+  SUM(COALESCE(land.rai, 0)) 
+    + (SUM(COALESCE(land.ngan, 0)) / 4) 
+    + (SUM(COALESCE(land.square_wa, 0)) / 400) AS total_area_in_rai
+FROM land
+JOIN land_status ON land_status.ID_land_status = land.current_land_status
+WHERE land.active = '1' 
+  AND land_status.actived = '1'
+GROUP BY land.current_soi
+ORDER BY land.current_soi;
+`;
+
+  const results = await getDataAllFromDB(query_land);
+  return results;
+};
+
+const getDashboardCitizenTableModel = async () => {
+  const query_citizen = `
+  SELECT 
+    ct.soi,
+    SUM(CASE WHEN ct.district = 'หัวตะพาน' THEN 1 ELSE 0 END) 
+      + SUM(CASE WHEN ct.district = 'ไทรบุรี' THEN 1 ELSE 0 END) AS total_citizens,  -- นับจำนวนราษฎรทั้งหมดในแต่ละ soi
+    SUM(CASE WHEN ct.district = 'หัวตะพาน' THEN 1 ELSE 0 END) AS huataphan,
+    SUM(CASE WHEN ct.district = 'ไทรบุรี' THEN 1 ELSE 0 END) AS taiburi,
+    SUM(CASE WHEN ct.gender = '1' THEN 1 ELSE 0 END) AS male,
+    SUM(CASE WHEN ct.gender = '0' THEN 1 ELSE 0 END) AS female
+  FROM citizen as ct
+  GROUP BY ct.soi
+  ORDER BY ct.soi;
+  `;
+
+  const results = await getDataAllFromDB(query_citizen);
+  return results;
+};
+
+const getOneDashboardModel = async (data) => {
+  const query = `
+  SELECT 
+    SUM(land_use.rubber_tree = '1') AS total_rubber_tree,
+    SUM(land_use.fruit_orchard = '1') AS total_fruit_orchard,
+    SUM(land_use.livestock_farming = '1') AS total_livestock_farming,
+    SUM(land_use.other = '1') AS total_other
+  FROM land
+  JOIN land_use ON land.id_land = land_use.land_id
+  WHERE land.active = '1' AND land.current_soi = ?
+    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02');
+  `;
+
+  const results = await getDataAllWithOneFromDB(query, data);
+  return results;
+};
+
+// --------------------------------------- End DocumentLandType ---------------------------------------
+
 module.exports = {
   prefixModel,
   relationModel,
@@ -163,5 +266,11 @@ module.exports = {
   createRelationModel,
   updateRelationModel,
   deleteRelationModel,
-  getOneLandUse
+  getOneLandUse,
+  getOneStatusActiveModel,
+  getOneRelationActiveModel,
+  getDashboardModel,
+  getOneDashboardModel,
+  getDashboardTableModel,
+  getDashboardCitizenTableModel
 };

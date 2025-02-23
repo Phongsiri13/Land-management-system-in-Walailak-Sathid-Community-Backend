@@ -5,7 +5,8 @@ const {
     createRelationController,
     updateRelationController,
     deleteRelationController,
-    relationWithCitizenCTL
+    relationWithCitizenCTL,
+    getRelationActiveCTL
 } = require("../controllers/relation_controller");
 const { pool } = require("../config/config_db");
 
@@ -15,7 +16,8 @@ router.get("/", relationController);
 router.get("/:id", getRelationController);
 router.post("/create", createRelationController);
 router.put("/:id", updateRelationController);
-router.delete("/:id", deleteRelationController);
+router.get("/active/:id", getRelationActiveCTL);
+router.put("/active/:id", deleteRelationController);
 // -------------------------------------------- END --------------------------------------------
 
 // get relation ship

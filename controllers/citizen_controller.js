@@ -56,6 +56,21 @@ const getCitizenAmountPageCTL = async (req, res) => {
   }
 };
 
+const getCitizenHistoryAmountPageCTL = async (req, res) => {
+  const { amount, page } = req.params;
+  console.log("citizenAmount:", amount + " : ", page);
+  try {
+    const isCitizen = await citizenService.getCitizenHistoryPage(amount, page);
+    if (!isCitizen) {
+      return res.status(422);
+    }
+    res.status(200).json(isCitizen);
+  } catch (err) {
+    console.error("Error search data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getCitizenByFullNameCTL = async (req, res) => {
   const {firstname, lastname} = req.query;
 
@@ -82,10 +97,40 @@ const getCitizenByFullNameCTL = async (req, res) => {
   }
 };
 
+const getOneCitizenLandHoldCTL = async (req, res) => {
+  const {id} = req.params;
+
+  if (!id) {
+    return res
+      .status(400)
+      .json({ message: "ข้อมูลที่ใช้คนหาไม่ถูกต้อง", status:false });
+  }
+
+  try {
+    const values = [id];
+    console.log('values:', values)
+    const results = await citizenModel.getCitizenLandHold(values);
+
+    if (results) {
+      return res.status(200).json({
+        message: "มีราษฎรคนนี้ในระบบ",
+        status: true,
+        data: results
+      });
+    }
+    return res.status(200).json({ message: "ไม่พบราษฎรในระบบ", status:false  });
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).send("Internal server error.");
+  }
+};
+
 module.exports = {
   addCitizenController,
   updateCitizenCTL,
   getCitizenIdCTL,
   getCitizenAmountPageCTL,
   getCitizenByFullNameCTL,
+  getCitizenHistoryAmountPageCTL,
+  getOneCitizenLandHoldCTL
 };

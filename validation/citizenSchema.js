@@ -10,7 +10,7 @@ const citizenSchema = Joi.object({
   house_number: Joi.string().max(10).required(),
   village_number: Joi.string().max(2).pattern(/^\d+$/).required(), // Must be a numeric string
   district: Joi.string().max(100).required(),
-  soi: Joi.number().max(10).allow(null, ""), // Allow null or empty string
+  soi: Joi.number().max(13).allow(null, ""), // Allow null or empty string
   phone_number: Joi.string().length(10).pattern(/^\d+$/).required(), // 10-digit numeric string
   gender: Joi.string().valid("0", "1").required()
 })

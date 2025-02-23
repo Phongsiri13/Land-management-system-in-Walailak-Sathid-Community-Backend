@@ -14,7 +14,24 @@ const addHeir = async (data) => {
     const result = await heirModel.addHeir(values);
     return result;
   } catch (err) {
-    throw new Error(`Error adding citizen: ${err.message}`);
+    throw new Error(`Error adding the heir: ${err.message}`);
+  }
+};
+
+const updateHeir = async (data, id) => {
+  const heirData = data;
+  console.log('id:',id)
+  try {
+    const { error, value } = heirSchema.validate(heirData);
+    if (error) {
+      throw new Error(`Validation Error: ${error.details[0].message}`);
+    }
+
+    const values = [value.first_name, value.last_name, value.prefix_id, parseInt(id)];
+    const result = await heirModel.updateHeir(values);
+    return result;
+  } catch (err) {
+    throw new Error(`Error updating heir: ${err.message}`);
   }
 };
 
@@ -40,7 +57,7 @@ const addRelationalToHeirsAll = async (data) => {
   } catch (err) {
     return {
       status: "error",
-      message: `Error adding heirs: ${err.message}`,
+      message: `Error adding Relation citizen and heirs: ${err.message}`,
     };
   }
 };
@@ -61,8 +78,25 @@ const getFullNameHeir = async (data) => {
   }
 };
 
+// page and limit
+const getHeirPage = async (amount,page) => {
+  console.log('param:',amount, ' : ', page)
+  try {
+    const result = await heirModel.heirAmountPage(page,amount);
+    console.log('re-sult:',result)
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${error.message}`);
+  }
+}
+
 module.exports = {
   addHeir,
   getFullNameHeir,
   addRelationalToHeirsAll,
+  updateHeir,
+  getHeirPage
 };

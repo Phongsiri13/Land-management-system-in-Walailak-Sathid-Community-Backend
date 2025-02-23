@@ -5,7 +5,8 @@ const {
   createStatusController,
   deleteStatusController,
   getOneStatusController,
-  updateOneStatusController
+  updateOneStatusController,
+  getOneStatusActiveCTL
 } = require("../controllers/landStatus_controller");
 const { pool } = require("../config/config_db");
 
@@ -16,7 +17,8 @@ router.get("/:id", getOneStatusController);
 router.post("/create", createStatusController);
 router.put("/:id", updateOneStatusController);
 // DELETE route to delete a record by ID
-router.delete("/:id", deleteStatusController);
+router.get("/active/:id", getOneStatusActiveCTL);
+router.put("/active/:id", deleteStatusController);
 // -------------------------------------------- END --------------------------------------------
 
 module.exports = router;

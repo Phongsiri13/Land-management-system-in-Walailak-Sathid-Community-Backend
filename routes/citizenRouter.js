@@ -6,6 +6,9 @@ const {
   getLikeSearchFromDB,
   getSearchDataFromDB
 } = require("../config/config_db");
+const multer = require("multer");
+const fs = require("fs");
+const path = require("path");
 const citizenController = require("../controllers/citizen_controller");
 const { prefixesController } = require("../controllers/prefix_controller");
 
@@ -16,6 +19,7 @@ router.get("/", (req, res) => {
   res.send("People page");
 });
 
+// update
 router.put("/:id", citizenController.updateCitizenCTL);
 
 // ค้นหาข้อมูลโดยใช้ LIKE
@@ -48,9 +52,11 @@ router.get("/search", async (req, res) => {
 
 // Search by first-name & last-name
 router.get("/qf", citizenController.getCitizenByFullNameCTL);
-
+// land holding
+router.get("/holding/:id", citizenController.getOneCitizenLandHoldCTL);
 // get citizen amount
 router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
+router.get("/history_citizen/:amount/:page", citizenController.getCitizenHistoryAmountPageCTL);
 
 router.get("/prefix", prefixesController);
 

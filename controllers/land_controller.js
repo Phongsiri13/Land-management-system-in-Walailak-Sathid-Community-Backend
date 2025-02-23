@@ -19,7 +19,7 @@ const updateLandCTL = async (req, res) => {
   const id = req.params.id;
   const landData = req.body;
   console.log("id:", id);
-  // return res.status(200).json({koko:'22221111'});
+
   try {
     const newLand = await landService.UpdateLand(landData, id);
     if (!newLand) {
@@ -41,15 +41,13 @@ const deleteLandByActiveCTL = async (req, res) => {
     console.log("return err");
   }
   try {
-    const values = [active.active, id]
-    const result = await landModel.changeActiveLand(values);
+    const values = [active.active, id];
+    const result = await landModel.changeActiveLand(values, id);
     console.log("result:", result);
-    if (result) {
-      return res.json({ success: result, message: "อัพเดทการใช้งานที่ดินสำเร็จ!" });
-    } else {
-      // console.log("ไม่สามารถอัพเดทข้อมูลได้!"); 
-      return res.json({ success: false, message: "ไม่สามารถอัพเดทการใช้งานที่ดินข้อมูลได้!" });
+    if (!result) {
+      return res.status(422);
     }
+    res.status(200).json(result);
   } catch (err) {
     console.error("Error inserting data: ", err);
     res.status(500).json({ message: err.message });
@@ -61,6 +59,21 @@ const getLandAmountPageCTL = async (req, res) => {
   console.log("land-data:", landData);
   try {
     const newLand = await landService.getLandPage();
+    if (!newLand) {
+      return res.status(422);
+    }
+    res.status(200).json(newLand);
+  } catch (err) {
+    console.error("Error inserting data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getLandHistoryAmountPageCTL = async (req, res) => {
+  const landData = req.params;
+  console.log("land-data:", landData);
+  try {
+    const newLand = await landService.getLandHistoryPage(landData);
     if (!newLand) {
       return res.status(422);
     }
@@ -108,6 +121,26 @@ const getLandUseByIdCTL = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const updateLandUseCTL = async (req, res) => {
+  const id = req.params.id;
+  const landData = req.body;
+  if (!landData.data) {
+    return res.status(200).send("no");
+  }
+  // console.log("id:", id);
+  // console.log("landData:", landData);
+  try {
+    const newLand = await landService.UpdateLandUse(landData, id);
+    if (!newLand) {
+      return res.status(422);
+    }
+    res.status(200).json(newLand);
+  } catch (err) {
+    console.error("Error inserting data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
 // ---------------------------------------- End Land Use ----------------------------------------
 
 module.exports = {
@@ -118,4 +151,6 @@ module.exports = {
   getLandUseByIdCTL,
   getLandActiveCTL,
   deleteLandByActiveCTL,
+  updateLandUseCTL,
+  getLandHistoryAmountPageCTL,
 };

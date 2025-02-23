@@ -12,6 +12,8 @@ const heirRouter = require("./routes/heirRouter");
 const statusRouter = require("./routes/statusRouter");
 const documentLandTypeRouter = require("./routes/documentTypeRouter");
 const relationRouter = require("./routes/relationRouter");
+const uploadFileRouter = require("./routes/uploadFileRouter");
+const dashboardRouter = require("./routes/dashboardRouter");
 
 const app = express();
 const port = 3000;
@@ -46,7 +48,7 @@ app.use(
 app.use(express.json());
 
 // ให้บริการไฟล์จากโฟลเดอร์ 'uploads'
-app.use("/uploads", checkRole, express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
 
 // Data management
 app.use("/login", loginRouter);
@@ -56,6 +58,8 @@ app.use("/heir", heirRouter);
 app.use("/manage_status_info", statusRouter);
 app.use("/manage_land_document_type", documentLandTypeRouter);
 app.use("/manage_relation", relationRouter);
+app.use("/upload_file", uploadFileRouter);
+app.use("/dashboard", dashboardRouter);
 
 
 function isAuthenticated(req, res, next) {

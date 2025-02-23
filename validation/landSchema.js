@@ -18,7 +18,7 @@ const landSchema = Joi.object({
   lat: Joi.number().min(-90).max(90).allow(null), // Validate latitude if needed
   // หมู่บ้าน (string)
   notation: Joi.string().allow("").optional(), // บันทึกเพิ่มเติม (string, ไม่บังคับ)
-  land_status: Joi.number().integer().required(), // สถานะที่ดิน (number)
+  land_status: Joi.string().max(6).required(), // สถานะที่ดิน (number)
   id_card: Joi.string()
     .length(13)
     .pattern(/^\d{13}$/)
@@ -39,7 +39,7 @@ const forceLandSchema = Joi.object({
   lat: Joi.number().min(-90).max(90).allow(null), // Validate latitude if needed
   // หมู่บ้าน (string)
   notation: Joi.string().allow("").optional(), // บันทึกเพิ่มเติม (string, ไม่บังคับ)
-  land_status: Joi.number().integer().required(), // สถานะที่ดิน (number)
+  land_status: Joi.string().max(6).required(), // สถานะที่ดิน (number)
   id_card: Joi.string()
     .length(13)
     .pattern(/^\d{13}$/)

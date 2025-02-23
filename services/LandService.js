@@ -1,5 +1,6 @@
 const landModel = require("../model/landModel");
 const landSchemaCheck = require("../validation/landSchema");
+const {landUseSchema} = require("../validation/landuseSchema");
 
 // SV = service
 
@@ -83,7 +84,7 @@ const UpdateLand = async (landData, id) => {
     ];
 
     // บันทึกข้อมูลลงฐานข้อมูล
-    const result = await landModel.updateLandOne(values);
+    const result = await landModel.updateLandOne(values, id);
     console.log("result:", result);
     // แจ้งเตือนเมื่อสำเร็จ
     if (result) {
@@ -102,6 +103,59 @@ const UpdateLand = async (landData, id) => {
   }
 };
 
+const UpdateLandUse = async (landData, id) => {
+  console.log('-',landData)
+  try {
+    // convert 
+    const formattedLandUseData = {
+      land_use_id: Number(landData.data.land_use_id),
+      land_id: String(landData.data.land_id),
+      rubber_tree: landData.data.rubber_tree == true ? "1" : "0",
+      fruit_orchard: landData.data.fruit_orchard == true ? "1" : "0",
+      livestock_farming: landData.data.livestock_farming == true ? "1" : "0",
+      other: landData.data.other == true  ? "1" : "0", 
+      details: String(landData.data.details || ""),
+    };
+
+    // ตรวจสอบความถูกต้องของข้อมูลตาม schema
+    const { error, value } = landUseSchema.validate(formattedLandUseData);
+
+    if (error) {
+      throw new Error(`Validation Error: ${error}`);
+    } else {
+      console.log("Validated Data:", value);
+    }
+
+    const values = [
+      value.rubber_tree,
+      value.fruit_orchard,
+      value.livestock_farming,
+      value.other,
+      value.details || null, // details ไม่ต้องแปลง
+      value.land_id, // ใช้ค่า id_land
+      value.land_use_id, // ใช้ค่า land_use_id
+    ];
+    console.log("values:", value);
+    // บันทึกข้อมูลลงฐานข้อมูล
+    const result = await landModel.updateLandUseOne(values);
+    console.log("result:", true);
+    // แจ้งเตือนเมื่อสำเร็จ
+    if (result) {
+      // ตรวจสอบว่ามีแถวถูกเพิ่มจริง
+      console.log("อัพเดทข้อมูลการใช้ประโยชน์ที่ดิน!");
+      return {
+        success: true,
+        message: "อัพเดทข้อมูลการใช้ประโยชน์ที่ดินสำเร็จ!",
+      };
+    } else {
+      console.log("ไม่สามารถอัพเดทข้อมูลได้!");
+      return { success: false, message: "ไม่สามารถอัพเดทข้อมูลได้!" };
+    }
+  } catch (err) {
+    throw new Error(`Error updating landuse: ${err.message}`);
+  }
+};
+
 // page and limit
 const getLandPage = async (landData) => {
   try {
@@ -115,8 +169,26 @@ const getLandPage = async (landData) => {
   }
 };
 
+const getLandHistoryPage = async (land_page_amount) => {
+  // console.log('param:',land_page_amount.params.amount, ' : ', land_page_amount.params.page)
+  const {amount, page } = land_page_amount;
+  console.log(land_page_amount)
+  try {
+    const result = await landModel.landHistoryAmountPage(page,amount);
+    console.log('re-sult:',result)
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${error.message}`);
+  }
+}
+
 module.exports = {
   addLand,
   getLandPage,
   UpdateLand,
+  UpdateLandUse,
+  getLandHistoryPage
 };

@@ -7,37 +7,12 @@ const {
   getSearchDataFromDB,
 } = require("../config/config_db");
 const router = express.Router();
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const { addLandController, getLandAmountPageCTL, deleteLandByActiveCTL,
-  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL} = require("../controllers/land_controller");
+const { addLandController, getLandAmountPageCTL, deleteLandByActiveCTL, getLandHistoryAmountPageCTL,
+  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL, updateLandUseCTL} = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
 const { soiController } = require("../controllers/soi_controller");
-
-// Configure multer for file uploads
-// ตั้งค่า storage ของ multer
-const liveStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join("uploads", "lives");
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir); // ระบุว่าไฟล์จะถูกเก็บที่ไหน
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // ใช้เวลาปัจจุบันเป็นชื่อไฟล์
-  },
-});
-
-const file_limit = 3;
-const uploadLives = multer({
-  storage: liveStorage,
-  limits: { files: file_limit },
-});
-
 
 router.get("/complete_land/:id", (req, res) => {
   // Get the id from the URL parameter
@@ -124,8 +99,6 @@ WHERE l.id_land = ?;
   );
 });
 
-router.get("/complete_land/:amount/:page", getLandAmountPageCTL);
-
 function convertNganAndSquareWaToRai(ngan, squareWa) {
   const totalSquareWa = ngan * 100 + squareWa; // แปลงงานและตารางวาเป็นตารางวาทั้งหมด
   const rai = totalSquareWa / 400; // แปลงตารางวาเป็นไร่ (1 ไร่ = 400 ตารางวา)
@@ -171,89 +144,20 @@ router.get("/search", async (req, res) => {
     return res.status(500).send("Database query error");
   }
 });
-
 router.get("/sois", soiController);
-
 router.get("/land_status", landStatusController);
-
+router.get("/:id", getLandIdCTL);
+// Get One
 router.get("/active/:id", getLandActiveCTL);
-router.delete("/active/:id", deleteLandByActiveCTL);
+router.get("/land_use/:id", getLandUseByIdCTL);
+router.get("/history_land/:amount/:page", getLandHistoryAmountPageCTL);
+router.put("/land_use/:id", updateLandUseCTL);
+router.get("/complete_land/:amount/:page", getLandAmountPageCTL);
 
-// Add a new land
 router.post("/", addLandController);
-
 // Update the land is selected
 router.put("/:id", updateLandCTL);
+router.delete("/active/:id", deleteLandByActiveCTL);
 
-// Get One
-router.get("/:id", getLandIdCTL);
-
-
-
-// upload lives image
-router.post(
-  "/upload_live",
-  uploadLives.array("resume", file_limit),
-  (req, res) => {
-    const data = req.body;
-    if (!req.files) {
-      return res.status(400).send("No files uploaded.");
-    }
-    console.log("uploadLive:", data);
-    // หากอัพโหลดไฟล์สำเร็จ
-    res.send({
-      message: "Files uploaded successfully!",
-      files: req.files,
-    });
-  }
-);
-
-// GET endpoint to fetch all images
-router.get("/upload_lives", (req, res) => {
-  console.log("dirname:");
-  const directoryPath = path.join("uploads", "lives");
-
-  // Check if the 'uploads/files' directory exists
-  if (!fs.existsSync(directoryPath)) {
-    return res.status(404).json({ message: "Directory not found" });
-  }
-
-  // Read all files in the directory
-  fs.readdir(directoryPath, (err, files) => {
-    if (err) {
-      return res.status(500).json({ message: "Error reading directory" });
-    }
-
-    // Filter out only image files (e.g., jpg, png, gif)
-    const imageFiles = files.filter((file) =>
-      [".jpg", ".jpeg", ".png", ".gif", "PNG"].includes(
-        path.extname(file).toLowerCase()
-      )
-    );
-
-    // If there are no images in the directory
-    if (imageFiles.length === 0) {
-      return res.status(404).json({ message: "No images found" });
-    }
-
-    // Construct the full URL using the domain (host) and protocol (http/https)
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-
-    // Send the list of image file names
-    res.json({
-      message: "Images retrieved successfully!",
-      images: imageFiles.map((file) => ({
-        filename: file,
-        url: `${baseUrl}/uploads/lives/${file}`, // Construct the URL for each image
-      })),
-    });
-  });
-});
-
-// ---------------------------------------- Land Use ----------------------------------------
-
-router.get("/land_use/:id", getLandUseByIdCTL);
-
-// ---------------------------------------- End Land Use ----------------------------------------
 
 module.exports = router;

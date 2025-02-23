@@ -5,6 +5,7 @@ const {
   createRelationModel,
   updateRelationModel,
   deleteRelationModel,
+  getOneRelationActiveModel
 } = require("../model/commonModel");
 const { getDataAllWithOneFromDB } = require("../config/config_db");
 
@@ -27,9 +28,36 @@ const getRelationController = async (req, res) => {
   }
   console.log("--------------- Relation get one ---------------");
   try {
-    const values = [parseInt(id)];
+    const values = [id];
     console.log("v:", values);
     const results = await getOneRelationModel(values);
+    if (results) {
+      return res.json({
+        success: true,
+        data: results,
+      });
+    } else {
+      console.log("ไม่สามารถเพิ่มข้อมูลได้!");
+      return res.json({ success: false, message: "ไม่สามารถเพิ่มข้อมูลได้!" });
+    }
+  } catch (err) {
+    res.status(500).send("Database query error");
+  }
+};
+
+const getRelationActiveCTL = async (req, res) => {
+  const { id } = req.params;
+  const active = req.body;
+  console.log("getOne:", req.params);
+
+  if (!id) {
+    return res.status(400).send({ message: "ID parameter is required" });
+  }
+  console.log("--------------- Relation get one ---------------");
+  try {
+    const values = [id, active.id];
+    console.log("v:", values);
+    const results = await getOneRelationActiveModel(values);
     if (results) {
       return res.json({
         success: true,
@@ -74,7 +102,7 @@ const updateRelationController = async (req, res) => {
   }
   console.log("--------------- relation updateOne ---------------");
   try {
-    const values = [label, parseInt(id)];
+    const values = [label, id];
     console.log(values);
     const results = await updateRelationModel(values);
     if (results) {
@@ -93,16 +121,18 @@ const updateRelationController = async (req, res) => {
 
 const deleteRelationController = async (req, res) => {
   const { id } = req.params; // Access 'id' from the query string
+  const active = req.body; // Access 'id' from the query string
   console.log("id:", id);
-  console.log("id-type:", typeof id);
+  console.log("active:", active);
 
   if (!id) {
     return res.status(400).send({ message: "ID parameter is required" });
   }
   console.log("--------------- Relation delete ---------------");
+
   try {
-    const values = [parseInt(id)];
-    // console.log('v:',values)
+    const values = [active.id, id];
+    console.log('v:',values)
     const results = await deleteRelationModel(values);
     if (results) {
       return res.json({
@@ -174,4 +204,5 @@ module.exports = {
   updateRelationController,
   deleteRelationController,
   relationWithCitizenCTL,
+  getRelationActiveCTL
 };
