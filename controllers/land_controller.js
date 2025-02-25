@@ -84,6 +84,21 @@ const getLandHistoryAmountPageCTL = async (req, res) => {
   }
 };
 
+const getLandHistoryOneCompareCTL = async (req, res) => {
+  const landData = req.params;
+  console.log("land-data:", landData);
+  try {
+    const newLand = await landModel.landHistoryLandHistoryOneCompare(parseInt(landData.id));
+    if (!newLand) {
+      return res.status(422);
+    }
+    res.status(200).json(newLand);
+  } catch (err) {
+    console.error("Error inserting data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getLandIdCTL = async (req, res) => {
   const landData = req.params.id;
   console.log("land-data-id:", landData);
@@ -153,4 +168,5 @@ module.exports = {
   deleteLandByActiveCTL,
   updateLandUseCTL,
   getLandHistoryAmountPageCTL,
+  getLandHistoryOneCompareCTL
 };

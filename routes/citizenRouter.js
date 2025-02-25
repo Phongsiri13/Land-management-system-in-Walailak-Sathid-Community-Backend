@@ -54,8 +54,10 @@ router.get("/search", async (req, res) => {
 router.get("/qf", citizenController.getCitizenByFullNameCTL);
 // land holding
 router.get("/holding/:id", citizenController.getOneCitizenLandHoldCTL);
+router.get("/history_citizen/:id", citizenController.getOneHistoryCitizenCTL);
 // get citizen amount
 router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
+router.get("/filter/:amount/:page", citizenController.getCitizenFilterAmountPageCTL);
 router.get("/history_citizen/:amount/:page", citizenController.getCitizenHistoryAmountPageCTL);
 
 router.get("/prefix", prefixesController);

@@ -8,7 +8,8 @@ const {
 } = require("../config/config_db");
 const router = express.Router();
 const { addLandController, getLandAmountPageCTL, deleteLandByActiveCTL, getLandHistoryAmountPageCTL,
-  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL, updateLandUseCTL} = require("../controllers/land_controller");
+  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL, updateLandUseCTL,
+  getLandHistoryOneCompareCTL} = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
@@ -150,6 +151,7 @@ router.get("/:id", getLandIdCTL);
 // Get One
 router.get("/active/:id", getLandActiveCTL);
 router.get("/land_use/:id", getLandUseByIdCTL);
+router.get("/history_land/:id", getLandHistoryOneCompareCTL);
 router.get("/history_land/:amount/:page", getLandHistoryAmountPageCTL);
 router.put("/land_use/:id", updateLandUseCTL);
 router.get("/complete_land/:amount/:page", getLandAmountPageCTL);

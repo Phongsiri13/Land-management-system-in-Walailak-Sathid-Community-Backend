@@ -43,9 +43,30 @@ const getCitizenIdCTL = async (req, res) => {
 
 const getCitizenAmountPageCTL = async (req, res) => {
   const { amount, page } = req.params;
+  // const { searchType, searchQuery, soi, district } = req.query;
+  // console.log('req.query:', req.query)
+  
   console.log("citizenAmount:", amount + " : ", page);
   try {
-    const isCitizen = await citizenService.getCitizenPage(amount, page);
+    const isCitizen = await citizenService.getCitizenPage(amount, page, req.query);
+    if (!isCitizen) {
+      return res.status(422);
+    }
+    res.status(200).json(isCitizen);
+  } catch (err) {
+    console.error("Error search data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getCitizenFilterAmountPageCTL = async (req, res) => {
+  const { amount, page } = req.params;
+  console.log("citizenAmount:", amount + " : ", page);
+  console.log("all-query:", req.query);
+  // flname
+  const queryList = ["สมรัก" ,req.query.soi, req.query.gender]
+  try {
+    const isCitizen = await citizenService.getCitizenFilterPage(amount, page, queryList[0], req.query);
     if (!isCitizen) {
       return res.status(422);
     }
@@ -125,6 +146,28 @@ const getOneCitizenLandHoldCTL = async (req, res) => {
   }
 };
 
+const getOneHistoryCitizenCTL = async (req, res) => {
+  const {id} = req.params;
+  console.log('id:', id)
+
+  if (!id) {
+    return res
+      .status(400)
+      .json({ message: "ข้อมูลที่ใช้คนหาไม่ถูกต้อง", status:false });
+  }
+
+  try {
+    const values = [id];
+    console.log('values:', values)
+    const results = await citizenModel.getOneCitizenHistory(values);
+
+    return res.status(200).json(results);
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).send("Internal server error.");
+  }
+};
+
 module.exports = {
   addCitizenController,
   updateCitizenCTL,
@@ -132,5 +175,7 @@ module.exports = {
   getCitizenAmountPageCTL,
   getCitizenByFullNameCTL,
   getCitizenHistoryAmountPageCTL,
-  getOneCitizenLandHoldCTL
+  getOneCitizenLandHoldCTL,
+  getCitizenFilterAmountPageCTL,
+  getOneHistoryCitizenCTL
 };

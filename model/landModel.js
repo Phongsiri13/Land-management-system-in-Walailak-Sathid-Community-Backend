@@ -59,6 +59,7 @@ SELECT
         ' ', 
         COALESCE(p.last_name, '')
     ) AS fullname,
+    l.id_h_land,
     land_status_name, 
     l.land_id, 
     l.current_soi,
@@ -74,6 +75,31 @@ SELECT
   LIMIT ? OFFSET ?;`;
     const results = await getSearchDataFromDB(query, [limit, offset]);
     return results;
+  },
+  landHistoryLandHistoryOneCompare: async (land_h_id) => {
+    const query = `
+   SELECT 
+    *
+FROM 
+    history_land AS hl
+JOIN 
+    land_status AS ls
+    ON hl.current_land_status = ls.ID_land_status
+    WHERE hl.id_h_land = ?;`;
+
+    const results_history = await getSearchDataFromDB(query, land_h_id);
+    console.log(results_history[0].land_id)
+    const query_current_land = `
+    SELECT 
+        *
+      FROM land
+      JOIN
+      land_status AS ls
+      ON land.current_land_status = ls.ID_land_status
+      WHERE id_land = ? LIMIT 1;`;
+    const LAND_ID = results_history[0].land_id
+    const results_land = await getSearchDataFromDB(query_current_land, LAND_ID);
+    return {results_history, results_land};
   },
   addLand: async (landData) => {
     console.log("Received landData:", landData);

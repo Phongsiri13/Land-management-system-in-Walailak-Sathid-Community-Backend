@@ -114,25 +114,199 @@ LIMIT 1;`;
     }
   },
 
-  citizenAmountPage: async (page, size) => {
+  citizenAmountPage: async (page, size, filters = {}) => {
+    const routePage = parseInt(page);
+    const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า
+    const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    let { searchType, searchQuery, soi, district } = filters;
+
+    // สร้างเงื่อนไข WHERE สำหรับการกรองข้อมูล
+    let whereClause = "WHERE 1=1";
+    const params = [];
+
+    if (searchQuery && searchType) {
+      if (searchType === "NAME") {
+        // เพิ่ม wildcard สำหรับ LIKE
+        const keywordWithSpace = `%${searchQuery}%`; // ค้นหาชื่อที่มีช่องว่าง
+        const keywordWithoutSpace = `%${searchQuery.replace(/\s/g, "")}%`; // ค้นหาชื่อที่ไม่มีช่องว่าง
+
+        whereClause += `
+                AND (
+                    first_name LIKE ? 
+                    OR last_name LIKE ? 
+                    OR CONCAT(first_name, ' ', last_name) LIKE ?
+                    OR REPLACE(CONCAT(first_name, ' ', last_name), ' ', '') LIKE ?
+                )`;
+
+        // เพิ่มค่าที่กรองใน params
+        params.push(
+          keywordWithSpace, // first_name
+          keywordWithSpace, // last_name
+          keywordWithSpace, // CONCAT(first_name, ' ', last_name)
+          keywordWithoutSpace // REPLACE(CONCAT(first_name, ' ', last_name), ' ', '')
+        );
+      } else if (searchType === "PHONE") {
+        whereClause += ` AND phone_number = ?`;
+        params.push(searchQuery);
+      } else if (searchType === "IDCARD") {
+        whereClause += ` AND ID_CARD = ?`;
+        params.push(searchQuery);
+      }
+    }
+
+    if (soi) {
+      whereClause += ` AND soi = ?`;
+      params.push(soi);
+    }
+
+    if (district) {
+      whereClause += ` AND district = ?`;
+      // เปลี่ยนค่าจาก district ตามที่กำหนด
+      if (district === "Huataphan") {
+        params.push("หัวตะพาน");
+      } else if (district === "Taiburi") {
+        params.push("ไทรบุรี");
+      } else {
+        params.push(district); // สำหรับเขตที่ไม่ตรงกับเงื่อนไขที่กำหนด
+      }
+    }
+
+    // Query เพื่อนับจำนวนข้อมูลทั้งหมดหลังกรอง
+    const maxLimitQuery = `
+        SELECT COUNT(ID_CARD) as Total 
+        FROM citizen
+        ${whereClause};
+    `;
+    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery, params);
+
+    // Query เพื่อดึงข้อมูลที่กรองแล้ว
+    const query = `
+        SELECT * 
+        FROM citizen
+        ${whereClause}
+        ORDER BY soi
+        LIMIT ? OFFSET ?;
+    `;
+    const results = await getSearchDataFromDB(query, [
+      ...params,
+      limit,
+      offset,
+    ]);
+
+    return {
+      results,
+      totalCount: parseInt(maxLimitResult.Total), // จำนวนข้อมูลทั้งหมดหลังกรอง
+    };
+  },
+
+  citizenFilterAmountPage: async (queryList, page, size, filter_type) => {
+    const { searchType, searchQuery } = filter_type;
     const routePage = parseInt(page);
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
     const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    console.log("lll:", queryList);
+    // แปลง keyword สำหรับการค้นหา
+    const keyword = searchQuery; // คีย์เวิร์ดที่ผู้ใช้ป้อน (อาจมีหรือไม่มีช่องว่
+    const keywordWithSpace = `%${keyword}%`; // สำหรับค้นหาแบบมีช่องว่าง
+    const keywordWithoutSpace = `%${keyword.replace(/\s/g, "")}%`; // สำหรับค้นหาแบบไม่มีช่องว่าง
 
-    // Query the database to get the maximum allowed limit
-    const maxLimitQuery = `SELECT COUNT(ID_CARD) as Total FROM citizen;`;
-    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery);
-    // console.log("max:", parseInt(maxLimitResult.Total));
+    let query;
+    let params;
 
-    const query = `
-SELECT * FROM citizen
-  ORDER BY soi 
-  LIMIT ? OFFSET ?;
-    `;
-    const results = await getSearchDataFromDB(query, [limit, offset]);
+    switch (searchType) {
+      case "NAME": // ค้นหาด้วยชื่อ
+        query = `
+        SELECT * FROM citizen AS ct
+        WHERE 
+          ct.first_name LIKE ? OR 
+          ct.last_name LIKE ? OR 
+          CONCAT(ct.first_name, ' ', ct.last_name) LIKE ? OR 
+          REPLACE(CONCAT(ct.first_name, ' ', ct.last_name), ' ', '') LIKE ?
+        ORDER BY ct.soi
+        LIMIT ? OFFSET ?;
+      `;
+        params = [
+          keywordWithSpace,
+          keywordWithSpace,
+          keywordWithSpace,
+          keywordWithoutSpace,
+          limit,
+          offset,
+        ];
+        break;
+
+      case "PHONE": // ค้นหาด้วยเบอร์โทรศัพท์
+        query = `
+          SELECT * FROM citizen AS ct
+          WHERE ct.phone_number = ?
+          LIMIT 1;
+        `;
+        params = [searchQuery];
+        break;
+
+      case "IDCARD": // ค้นหาด้วยบัตรประชาชน
+        query = `
+          SELECT * FROM citizen AS ct
+          WHERE ct.ID_CARD = ?
+          LIMIT 1;
+        `;
+        params = [searchQuery];
+        break;
+
+      default:
+        return res.status(400).json({ error: "Invalid search type" });
+    }
+
+    //   const query_citizen = `
+    //   SELECT * FROM citizen AS ct
+    //   WHERE
+    //     ct.first_name LIKE ? OR
+    //     ct.last_name LIKE ? OR
+    //     CONCAT(ct.first_name, ' ', ct.last_name) LIKE ? OR
+    //     REPLACE(CONCAT(ct.first_name, ' ', ct.last_name), ' ', '') LIKE ?
+    //   ORDER BY ct.soi
+    //   LIMIT ? OFFSET ?;
+    // `;
+
+    const results = await getSearchDataFromDB(query, params);
+    // const results = await getSearchDataFromDB(query_citizen, [
+    //   keywordWithSpace,
+    //   keywordWithSpace,
+    //   keywordWithSpace,
+    //   keywordWithoutSpace,
+    //   limit,
+    //   offset,
+    // ]);
+
+    // Query สำหรับนับจำนวนผลลัพธ์ทั้งหมด
+    const countQuery = `
+  SELECT COUNT(*) AS total_count FROM citizen AS ct
+  WHERE 
+    ct.first_name LIKE ? OR 
+    ct.last_name LIKE ? OR 
+    CONCAT(ct.first_name, ' ', ct.last_name) LIKE ? OR 
+    REPLACE(CONCAT(ct.first_name, ' ', ct.last_name), ' ', '') LIKE ?;
+`;
+
+    let totalCount = 0;
+    if (searchType == "NAME") {
+      // เรียกใช้ query สำหรับนับจำนวนผลลัพธ์ทั้งหมด
+      const countParams = [
+        keywordWithSpace,
+        keywordWithSpace,
+        keywordWithSpace,
+        keywordWithoutSpace,
+      ];
+      const totalCountResult = await getSearchDataFromDB(
+        countQuery,
+        countParams
+      );
+      totalCount = totalCountResult[0].total_count.toString(); // แปลง BigInt เป็น String
+    }
+
     return {
       results,
-      totalCount: parseInt(maxLimitResult.Total), // Include the total row count in the response
+      totalCount,
     };
   },
 
@@ -189,6 +363,35 @@ SELECT * FROM history_citizen
     } else {
       return false; // If no match is found, return false
     }
+  },
+
+  getOneCitizenHistory: async (id_card) => {
+    const query_current_history = `
+SELECT hc.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
+FROM history_citizen as hc
+LEFT JOIN prefix ON hc.prefix_id = prefix.prefix_id
+WHERE hc.id_h_citizen = ?
+LIMIT 1;
+`;
+
+    const query = `
+SELECT citizen.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
+FROM citizen
+LEFT JOIN prefix ON citizen.prefix_id = prefix.prefix_id
+WHERE citizen.ID_CARD = ?
+LIMIT 1;
+`;
+
+    console.log("query:", query_current_history);
+    const resultsHistoryCitizen = await getSearchDataFromDB(
+      query_current_history,
+      id_card
+    );
+    const IDCARD = resultsHistoryCitizen[0].CARD_ID;
+    const resultsCitizen = await getSearchDataFromDB(query, IDCARD);
+    console.log(resultsHistoryCitizen[0].CARD_ID);
+
+    return { resultsHistoryCitizen, resultsCitizen };
   },
 };
 

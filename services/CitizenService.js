@@ -43,11 +43,26 @@ const addCitizen = async (citizenData) => {
 };
 
 // page and limit
-const getCitizenPage = async (amount,page) => {
+const getCitizenPage = async (amount,page, filter) => {
   console.log('param:',amount, ' : ', page)
+  console.log('filter:',filter)
   try {
-    const result = await citizenModel.citizenAmountPage(page,amount);
-    console.log('re-sult:',result)
+    const result = await citizenModel.citizenAmountPage(page,amount, filter);
+    // console.log('re-sult:',result)
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error) {
+    throw new Error(`Error adding citizen: ${error.message}`);
+  }
+}
+
+const getCitizenFilterPage = async (amount, page, queryList, filter_type) => {
+  console.log('param:',filter_type)
+  try {
+    const result = await citizenModel.citizenFilterAmountPage(queryList,page,amount, filter_type);
+    // console.log('re-sult:',result)
     return {
       success: true,
       data: result,
@@ -114,5 +129,6 @@ module.exports = {
   addCitizen,
   getCitizenPage,
   updateCitizen,
-  getCitizenHistoryPage
+  getCitizenHistoryPage,
+  getCitizenFilterPage
 };
