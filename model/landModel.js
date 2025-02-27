@@ -14,37 +14,100 @@ const landModel = {
     const results = await getSearchOneDataFromDB(query, land_id);
     return results;
   },
-  landAmountPage: async (page, size) => {
+  landAmountPage: async (page, size, filter = {}) => {
+    console.log("filter:", filter);
     const routePage = parseInt(page); // หน้า (default = 1)
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
     const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    const { searchType, searchQuery, soi, statusActived } = filter;
 
+    // สร้างเงื่อนไข WHERE สำหรับการกรองข้อมูล
+    let whereClause = "WHERE 1=1";
+    const params = [];
+
+    if (searchQuery && searchType) {
+      if (searchType === "LAND") {
+        whereClause += ` AND l.id_land LIKE ?`;
+        params.push(`%${searchQuery}%`);
+      } else if (searchType === "NAME") {
+        whereClause += `
+                AND (
+                    p.first_name LIKE ? 
+                    OR p.last_name LIKE ? 
+                    OR CONCAT(p.first_name, ' ', p.last_name) LIKE ? 
+                    OR REPLACE(CONCAT(p.first_name, ' ', p.last_name), ' ', '') LIKE ?
+                )`;
+        params.push(
+          `%${searchQuery}%`,
+          `%${searchQuery}%`,
+          `%${searchQuery}%`,
+          `%${searchQuery.replace(/\s/g, "")}%`
+        );
+      } else if (searchType === "LANDSTATUS") {
+        whereClause += ` AND ls.ID_land_status LIKE ?`;
+        params.push(`%${searchQuery}%`);
+      }
+    }
+
+    if (soi) {
+      whereClause += ` AND l.current_soi = ?`;
+      params.push(soi);
+    }
+
+    if (statusActived) {
+      whereClause += ` AND l.active = ?`;
+      params.push(statusActived);
+    }
+
+    // Query เพื่อดึงข้อมูลที่กรองแล้ว
     const query = `
-SELECT 
-    CONCAT(
-        COALESCE(pr.prefix_name, ''), 
-        ' ', 
-        COALESCE(p.first_name, ''), 
-        ' ', 
-        COALESCE(p.last_name, '')
-    ) AS fullname,
-    land_status_name, 
-    l.id_land, 
-    l.current_soi,
-    l.current_land_status, 
-    l.number, 
-    l.active,
-    p.phone_number
-  FROM land l
-  LEFT JOIN citizen p ON l.id_card = p.ID_CARD
-  LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
-  LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
-  ORDER BY l.current_soi
-  LIMIT ? OFFSET ?;
+        SELECT 
+            CONCAT(
+                COALESCE(pr.prefix_name, ''), 
+                '', 
+                COALESCE(p.first_name, ''), 
+                ' ', 
+                COALESCE(p.last_name, '')
+            ) AS fullname,
+            land_status_name, 
+            CAST(l.id_land AS CHAR) AS id_land, 
+            l.current_soi,
+            l.current_land_status, 
+            l.number, 
+            l.active,
+            p.phone_number
+        FROM land l
+        LEFT JOIN citizen p ON l.id_card = p.ID_CARD
+        LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
+        LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
+        ${whereClause}
+        ORDER BY l.current_soi
+        LIMIT ? OFFSET ?;
     `;
-    const results = await getSearchDataFromDB(query, [limit, offset]);
-    return results;
+    const results = await getSearchDataFromDB(query, [
+      ...params,
+      limit,
+      offset,
+    ]);
+
+    // Query เพื่อนับจำนวนข้อมูลทั้งหมดหลังกรอง
+    const countQuery = `
+        SELECT CAST(COUNT(l.id_land) AS CHAR) AS totalCount
+        FROM land l
+        LEFT JOIN citizen p ON l.id_card = p.ID_CARD
+        LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
+        LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
+        ${whereClause};
+    `;
+    const [countResult] = await getSearchDataFromDB(countQuery, params);
+    console.log('results:',results)
+
+    return {
+      results,
+      totalCount: countResult.totalCount, // ค่าเป็น String แล้ว
+    };
   },
+
   landHistoryAmountPage: async (page, size) => {
     const routePage = parseInt(page); // หน้า (default = 1)
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
@@ -88,7 +151,7 @@ JOIN
     WHERE hl.id_h_land = ?;`;
 
     const results_history = await getSearchDataFromDB(query, land_h_id);
-    console.log(results_history[0].land_id)
+    console.log(results_history[0].land_id);
     const query_current_land = `
     SELECT 
         *
@@ -97,9 +160,9 @@ JOIN
       land_status AS ls
       ON land.current_land_status = ls.ID_land_status
       WHERE id_land = ? LIMIT 1;`;
-    const LAND_ID = results_history[0].land_id
+    const LAND_ID = results_history[0].land_id;
     const results_land = await getSearchDataFromDB(query_current_land, LAND_ID);
-    return {results_history, results_land};
+    return { results_history, results_land };
   },
   addLand: async (landData) => {
     console.log("Received landData:", landData);

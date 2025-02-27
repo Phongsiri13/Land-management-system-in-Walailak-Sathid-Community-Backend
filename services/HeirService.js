@@ -79,10 +79,10 @@ const getFullNameHeir = async (data) => {
 };
 
 // page and limit
-const getHeirPage = async (amount,page) => {
-  console.log('param:',amount, ' : ', page)
+const getHeirPage = async (amount,page, filter) => {
+  console.log('param:',filter)
   try {
-    const result = await heirModel.heirAmountPage(page,amount);
+    const result = await heirModel.heirAmountPage(page,amount, filter);
     console.log('re-sult:',result)
     return {
       success: true,

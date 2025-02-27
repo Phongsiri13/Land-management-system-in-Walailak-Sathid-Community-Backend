@@ -155,26 +155,54 @@ const heirModel = {
     const resultsHeir = await insertDataToDB(query_heir, values);
     return resultsHeir;
   },
-  heirAmountPage: async (page, size) => {
+  heirAmountPage: async (page, size, searchQuery) => {
     const routePage = parseInt(page);
-    const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
-    const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    const limit = parseInt(size);
+    const offset = (routePage - 1) * size;
 
-    // Query the database to get the maximum allowed limit
-    const maxLimitQuery = `SELECT COUNT(heir_id) as Total FROM heir;`;
-    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery);
-    // console.log("max:", parseInt(maxLimitResult.Total));
+    let whereClause = "";
+    let queryParams = [];
+
+    if (searchQuery) {
+      // ตัดคำที่ใช้ค้นหาโดยเว้นวรรค
+      const keywords = searchQuery.trim().split(/\s+/);
+
+      // ค้นหาทั้ง first_name และ last_name โดยใช้ LIKE
+      whereClause = `WHERE (${keywords
+        .map(() => "(heir.first_name LIKE ? OR heir.last_name LIKE ?)")
+        .join(" AND ")})`;
+
+      // เพิ่มค่าที่จะใช้แทนเครื่องหมาย ?
+      keywords.forEach((keyword) => {
+        const likePattern = `%${keyword}%`;
+        queryParams.push(likePattern, likePattern);
+      });
+    }
+
+    // คิวรีนับจำนวนข้อมูลที่ตรงกับเงื่อนไข
+    const maxLimitQuery = `
+        SELECT COUNT(heir_id) as Total 
+        FROM heir 
+        ${whereClause};`;
+    const [maxLimitResult] = await getSearchDataFromDB(
+      maxLimitQuery,
+      queryParams
+    );
 
     const query = `
-SELECT heir.*, prefix.prefix_name
-FROM heir
-JOIN prefix ON heir.prefix_id = prefix.prefix_id
-ORDER BY heir.created_at DESC
-LIMIT ? OFFSET ?;`;
-    const results = await getSearchDataFromDB(query, [limit, offset]);
+        SELECT heir.*, prefix.prefix_name
+        FROM heir
+        JOIN prefix ON heir.prefix_id = prefix.prefix_id
+        ${whereClause}
+        ORDER BY heir.created_at DESC
+        LIMIT ? OFFSET ?;`;
+
+    queryParams.push(limit, offset);
+    const results = await getSearchDataFromDB(query, queryParams);
+
     return {
       results,
-      totalCount: parseInt(maxLimitResult.Total), // Include the total row count in the response
+      totalCount: parseInt(maxLimitResult.Total),
     };
   },
 };

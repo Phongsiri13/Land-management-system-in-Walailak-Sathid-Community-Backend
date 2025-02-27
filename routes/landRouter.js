@@ -7,9 +7,18 @@ const {
   getSearchDataFromDB,
 } = require("../config/config_db");
 const router = express.Router();
-const { addLandController, getLandAmountPageCTL, deleteLandByActiveCTL, getLandHistoryAmountPageCTL,
-  getLandIdCTL, updateLandCTL, getLandUseByIdCTL, getLandActiveCTL, updateLandUseCTL,
-  getLandHistoryOneCompareCTL} = require("../controllers/land_controller");
+const {
+  addLandController,
+  getLandAmountPageCTL,
+  deleteLandByActiveCTL,
+  getLandHistoryAmountPageCTL,
+  getLandIdCTL,
+  updateLandCTL,
+  getLandUseByIdCTL,
+  getLandActiveCTL,
+  updateLandUseCTL,
+  getLandHistoryOneCompareCTL,
+} = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
@@ -106,7 +115,7 @@ function convertNganAndSquareWaToRai(ngan, squareWa) {
   return rai; // ส่งค่าที่แปลงเสร็จออกมา
 }
 
-function concealmentFormat(phoneNumber, word_count=6) {
+function concealmentFormat(phoneNumber, word_count = 6) {
   const regex = new RegExp(`^(\\d{${word_count}})(\\d{4})$`);
   return phoneNumber.replace(regex, `xxxxxx$2`);
 }
@@ -124,22 +133,27 @@ router.get("/search", async (req, res) => {
 
   try {
     const results = await getSearchDataFromDB(query_land, values);
-    if(results[0].ngan && results[0].square_wa){
-      const cal_to_rai = convertNganAndSquareWaToRai(results[0].ngan, results[0].square_wa);
-      results[0]["total_rai"] = cal_to_rai;
+    if (results.length > 0) {
+      if (results[0].ngan && results[0].square_wa) {
+        const cal_to_rai = convertNganAndSquareWaToRai(
+          results[0].ngan,
+          results[0].square_wa
+        );
+        results[0]["total_rai"] = cal_to_rai;
+      }
+      results[0].spk_area = concealmentFormat(results[0].spk_area, 5);
+      console.log("result:", results);
+      console.log("result-id:", results[0].id_card);
+      if (results) {
+        const query_people = `SELECT phone_number FROM citizen WHERE ID_CARD = ?`;
+        const values_p = [results[0].id_card];
+        const result = await getSearchDataFromDB(query_people, values_p);
+        results[0].phone_number =
+          concealmentFormat(result[0].phone_number) || null;
+      }
+      return res.json({ results });
     }
-    results[0].spk_area = concealmentFormat(results[0].spk_area, 5);
-    console.log("result:",results)
-    console.log("result-id:",results[0].id_card)
-
-    if (results) {
-      const query_people = `SELECT phone_number FROM citizen WHERE ID_CARD = ?`;
-      const values_p = [results[0].id_card];
-      const result = await getSearchDataFromDB(query_people, values_p);
-      results[0].phone_number = concealmentFormat(result[0].phone_number) || null;
-    }
-
-    res.json({results});
+    res.json({ results: [] });
   } catch (err) {
     console.error("Error executing query: " + err.message);
     return res.status(500).send("Database query error");
@@ -160,6 +174,5 @@ router.post("/", addLandController);
 // Update the land is selected
 router.put("/:id", updateLandCTL);
 router.delete("/active/:id", deleteLandByActiveCTL);
-
 
 module.exports = router;

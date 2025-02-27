@@ -56,9 +56,11 @@ const deleteLandByActiveCTL = async (req, res) => {
 
 const getLandAmountPageCTL = async (req, res) => {
   const landData = req.params;
+  const landQueryData = req.query;
   console.log("land-data:", landData);
+  console.log("land-data-query:", req.query);
   try {
-    const newLand = await landService.getLandPage();
+    const newLand = await landService.getLandPage(landQueryData, landData);
     if (!newLand) {
       return res.status(422);
     }

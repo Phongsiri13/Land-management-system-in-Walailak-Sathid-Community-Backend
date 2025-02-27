@@ -157,15 +157,18 @@ const UpdateLandUse = async (landData, id) => {
 };
 
 // page and limit
-const getLandPage = async (landData) => {
+const getLandPage = async (query, page_control) => {
+  // console.log('query:',query)
+  const {amount, page} = page_control
+  // console.log('page_control:',page_control)
   try {
-    const result = await landModel.landAmountPage(1, 10);
+    const result = await landModel.landAmountPage(page, amount, query);
     return {
       success: true,
       data: result,
     };
   } catch (error) {
-    throw new Error(`Error adding citizen: ${err.message}`);
+    throw new Error(`Error query land: ${error.message}`);
   }
 };
 

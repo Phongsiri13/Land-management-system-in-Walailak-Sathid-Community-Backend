@@ -83,7 +83,7 @@ const getHeirFullNameCTL = async (req, res) => {
 
 const getAllHeirCTL = async (req, res) => {
   const { heirData } = req.body;
-  // console.log("heirData:", heirData);
+  console.log("heirData:", heirData);
 
   try {
     const heir = await heirModel.getSearchFullHeirs(heirData);
@@ -178,19 +178,34 @@ const getAllHeirWithRelationToCitizenCTL = async (req, res) => {
 
 const getHeirAmountPageCTL = async (req, res) => {
   const { amount, page } = req.params;
-  console.log("dsadsa");
+  const {searchQuery} = req.query
+  console.log(':::',req.query);
   if (amount != 50) {
     return res.send("you got error");
   }
   console.log("citizenAmount:", amount + " : ", page);
   try {
-    const isCitizen = await heirService.getHeirPage(amount, page);
+    const isCitizen = await heirService.getHeirPage(amount, page, searchQuery);
     if (!isCitizen) {
       return res.status(422);
     }
     res.status(200).json(isCitizen);
   } catch (err) {
     console.error("Error search data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const getHeirNameCTL = async (req, res) => {
+  const { fullname } = req.query;
+  console.log("Fullname:", fullname);
+
+  try {
+    const HeirData = { first_name: fname, last_name: lname };
+    const heir = await heirService.getFullNameHeir(HeirData);
+    res.json(heir);
+  } catch (err) {
+    console.error("Error inserting data: ", err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -204,5 +219,6 @@ module.exports = {
   updateHeirAllCTL,
   getHeirAmountPageCTL,
   getAllHeirWithRelationCTL,
-  getAllHeirWithRelationToCitizenCTL
+  getAllHeirWithRelationToCitizenCTL,
+  getHeirNameCTL
 };
