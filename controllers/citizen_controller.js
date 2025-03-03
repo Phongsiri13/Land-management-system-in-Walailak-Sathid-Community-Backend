@@ -59,6 +59,7 @@ const getCitizenAmountPageCTL = async (req, res) => {
   }
 };
 
+// ไม่ใช้แล้ว
 const getCitizenFilterAmountPageCTL = async (req, res) => {
   const { amount, page } = req.params;
   console.log("citizenAmount:", amount + " : ", page);
@@ -131,15 +132,8 @@ const getOneCitizenLandHoldCTL = async (req, res) => {
     const values = [id];
     console.log('values:', values)
     const results = await citizenModel.getCitizenLandHold(values);
-
-    if (results) {
-      return res.status(200).json({
-        message: "มีราษฎรคนนี้ในระบบ",
-        status: true,
-        data: results
-      });
-    }
-    return res.status(200).json({ message: "ไม่พบราษฎรในระบบ", status:false  });
+    console.log('rr:',results)
+    return res.status(200).json(results);
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).send("Internal server error.");

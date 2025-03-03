@@ -4,7 +4,7 @@ const {
   removeDataToDB,
   getSearchOneDataFromDB,
   updateOneDataToDB,
-  getDataAllWithOneFromDB
+  getDataAllWithOneFromDB,
 } = require("../config/config_db");
 
 const prefixModel = async () => {
@@ -12,15 +12,6 @@ const prefixModel = async () => {
   const results = await getDataAllFromDB(query);
   return results;
 };
-
-// --------------------------------------- Start point statusLand ---------------------------------------
-const getOneLandUse = async (land_id) => {
-  const query = `SELECT * FROM land_use WHERE land_id = ?;`;
-  const results = await getSearchOneDataFromDB(query, land_id);
-  return results;
-};
-
-// --------------------------------------- end relation ---------------------------------------
 
 // --------------------------------------- Start point relation ---------------------------------------
 
@@ -167,19 +158,19 @@ const soiModel = async () => {
 
 // --------------------------------------- Start dashboard ---------------------------------------
 const getDashboardModel = async () => {
+
   const query = `
-  SELECT 
-    SUM(land_use.rubber_tree = '1') AS total_rubber_tree,
-    SUM(land_use.fruit_orchard = '1') AS total_fruit_orchard,
-    SUM(land_use.livestock_farming = '1') AS total_livestock_farming,
-    SUM(land_use.other = '1') AS total_other
-  FROM land
-  JOIN land_use ON land.id_land = land_use.land_id
-  WHERE land.active = '1'
-    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02');
-  `;
+SELECT 
+    lu.usage_id, 
+    CAST(COUNT(lu.usage_id) AS SIGNED) AS count
+FROM land
+JOIN land_land_usage AS lu ON land.id_land = lu.land_ID
+WHERE land.active = '1'
+GROUP BY lu.usage_id;
+`;
 
   const results = await getDataAllFromDB(query);
+  
   return results;
 };
 
@@ -229,24 +220,67 @@ const getDashboardCitizenTableModel = async () => {
   return results;
 };
 
-const getOneDashboardModel = async (data) => {
+const getOneDashboardModel = async (soi) => {
   const query = `
   SELECT 
-    SUM(land_use.rubber_tree = '1') AS total_rubber_tree,
-    SUM(land_use.fruit_orchard = '1') AS total_fruit_orchard,
-    SUM(land_use.livestock_farming = '1') AS total_livestock_farming,
-    SUM(land_use.other = '1') AS total_other
+      lu.usage_id, 
+      CAST(COUNT(lu.usage_id) AS SIGNED) AS count
   FROM land
-  JOIN land_use ON land.id_land = land_use.land_id
-  WHERE land.active = '1' AND land.current_soi = ?
-    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02');
+  JOIN land_land_usage AS lu ON land.id_land = lu.land_ID
+  WHERE land.active = '1' AND land.current_soi = ? AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02')
+  GROUP BY lu.usage_id;
   `;
-
-  const results = await getDataAllWithOneFromDB(query, data);
+  const results = await getDataAllWithOneFromDB(query, [soi]);
+  console.log(results)
   return results;
 };
 
 // --------------------------------------- End DocumentLandType ---------------------------------------
+
+// --------------------------------------- Start point land usage ---------------------------------------
+
+// ไม่ใช้แล้ว
+const getOneLandUse = async (land_id) => {
+  const query = `SELECT * FROM land_use WHERE land_id = ?;`;
+  const results = await getSearchOneDataFromDB(query, land_id);
+  return results;
+};
+
+const getOneLandUseModelV2 = async (land_id) => {
+  const query = `SELECT * FROM land_land_usage WHERE land_ID = ?;`;
+  const results = await getSearchOneDataFromDB(query, land_id);
+  return results;
+};
+
+const landUsageModel = async () => {
+  const query = "SELECT * FROM land_usage ORDER BY id_usage";
+  const results = await getDataAllFromDB(query);
+  return results;
+};
+
+const getOneLandUsageModel = async (id_landUsage) => {
+  const query = "SELECT * FROM land_usage WHERE id_usage = ?;";
+  console.log("id_landUsage:", id_landUsage);
+  const results = await getSearchOneDataFromDB(query, [id_landUsage]); // ✅ ใช้ array
+  return results;
+};
+
+const getOneLandUsageActiveModel = async (status_id) => {
+  console.log("active:", status_id);
+  const query = `SELECT * FROM land_usage WHERE actived = ?;`;
+  const results = await getSearchOneDataFromDB(query, status_id);
+  return results;
+};
+
+const updateOneLandUsageModel = async (values) => {
+  const query = `UPDATE land_usage 
+    SET land_usage_name = ? 
+    WHERE id_usage = ?;`;
+  const results = await updateOneDataToDB(query, values);
+  return results;
+};
+
+// --------------------------------------- end land usage ---------------------------------------
 
 module.exports = {
   prefixModel,
@@ -272,5 +306,10 @@ module.exports = {
   getDashboardModel,
   getOneDashboardModel,
   getDashboardTableModel,
-  getDashboardCitizenTableModel
+  getDashboardCitizenTableModel,
+  landUsageModel,
+  getOneLandUsageModel,
+  updateOneLandUsageModel,
+  getOneLandUsageActiveModel,
+  getOneLandUseModelV2,
 };

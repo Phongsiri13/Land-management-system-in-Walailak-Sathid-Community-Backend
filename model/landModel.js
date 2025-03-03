@@ -208,25 +208,26 @@ JOIN
       };
     } catch (err) {
       await connection.rollback();
-
+    
       console.error("❌ Transaction Error:", err.message);
       if (err.code === "ER_DUP_ENTRY") {
         // MySQL error 1062
         console.error("Duplicate Entry Error:", err.message);
-        return {
+        throw {
           statusCode: 409, // 409 Conflict
           status: false,
-          message: "มีที่ดินนี้อยู่ในระบบอยู่แล้ว",
+          message: err.message,
         };
       }
-
+    
       console.error("❌ Transaction Error:", err.message);
-      return {
+      throw {
         statusCode: 500, // Internal Server Error
         status: false,
         message: "ระบบขัดข้อง กรุณาลองใหม่ภายหลัง",
       };
-    } finally {
+    }
+    finally {
       connection.release();
     }
   },

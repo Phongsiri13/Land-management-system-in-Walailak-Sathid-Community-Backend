@@ -55,6 +55,7 @@ router.get("/qf", citizenController.getCitizenByFullNameCTL);
 // land holding
 router.get("/holding/:id", citizenController.getOneCitizenLandHoldCTL);
 router.get("/history_citizen/:id", citizenController.getOneHistoryCitizenCTL);
+router.get("/fullname/:name", citizenController.getOneHistoryCitizenCTL);
 // get citizen amount
 router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
 router.get("/filter/:amount/:page", citizenController.getCitizenFilterAmountPageCTL);

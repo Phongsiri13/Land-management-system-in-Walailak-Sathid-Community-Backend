@@ -18,6 +18,8 @@ const {
   getLandActiveCTL,
   updateLandUseCTL,
   getLandHistoryOneCompareCTL,
+  getLandUseByIdCTL_V2,
+  updateAndAddLandUseCTL,
 } = require("../controllers/land_controller");
 const {
   landStatusController,
@@ -165,12 +167,14 @@ router.get("/:id", getLandIdCTL);
 // Get One
 router.get("/active/:id", getLandActiveCTL);
 router.get("/land_use/:id", getLandUseByIdCTL);
+router.get("/v2/land_use/:id", getLandUseByIdCTL_V2);
 router.get("/history_land/:id", getLandHistoryOneCompareCTL);
 router.get("/history_land/:amount/:page", getLandHistoryAmountPageCTL);
 router.put("/land_use/:id", updateLandUseCTL);
 router.get("/complete_land/:amount/:page", getLandAmountPageCTL);
 
 router.post("/", addLandController);
+router.put("/v2/update_land_use/:landId", updateAndAddLandUseCTL);
 // Update the land is selected
 router.put("/:id", updateLandCTL);
 router.delete("/active/:id", deleteLandByActiveCTL);

@@ -346,23 +346,19 @@ SELECT * FROM history_citizen
   getCitizenLandHold: async (id_card) => {
     const query = `
     SELECT citizen.ID_CARD, 
-           land.number,
+           land.tf_number,
            land.id_land,
-           SUM(COALESCE(land.rai, 0)) 
-           + (SUM(COALESCE(land.ngan, 0)) / 4) 
-           + (SUM(COALESCE(land.square_wa, 0)) / 400) AS total_area_in_rai
+           land.rai,
+           land.ngan,
+           land.square_wa
     FROM citizen 
     JOIN land ON citizen.ID_CARD = land.id_card
     WHERE land.id_card = ?
     GROUP BY citizen.ID_CARD, land.id_land;
 `;
-    const resultsHeir = await getSearchDataFromDB(query, id_card);
+    const resultsCitizen = await getSearchDataFromDB(query, [id_card]);
 
-    if (resultsHeir.length > 0) {
-      return resultsHeir; // If there are matching heirs, return true
-    } else {
-      return false; // If no match is found, return false
-    }
+    return resultsCitizen;
   },
 
   getOneCitizenHistory: async (id_card) => {

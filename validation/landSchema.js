@@ -25,6 +25,21 @@ const landSchema = Joi.object({
     .required(), // บัตรประชาชน (13 หลัก)
 });
 
+// verify land schema
+const validateLandData = (landData) => {
+  const { error, value } = landSchema.validate(landData);
+  if (error) {
+    // สร้างข้อผิดพลาดแบบ Custom
+    const validationError = new Error("ข้อมูลที่เพิ่มเข้ามาไม่ถูกต้อง!");
+    validationError.name = "ValidationError"; // ตั้งค่า error.name
+    validationError.statusCode = 400;
+    validationError.details = error.details; // รายละเอียดข้อผิดพลาดจาก Joi
+    throw validationError; // โยนข้อผิดพลาดออกไป
+  }
+  return value; // คืนค่าข้อมูลที่ถูกต้อง
+};
+
+
 const forceLandSchema = Joi.object({
   address: Joi.string().max(6), // ที่อยู่ (string)
   soi: Joi.number().integer().min(0).max(13).required(), // ซอย (number, ต้องเป็นจำนวนเต็มบวก)
@@ -46,4 +61,4 @@ const forceLandSchema = Joi.object({
     .required(), // บัตรประชาชน (13 หลัก)
 });
 
-module.exports = {landSchema, forceLandSchema};
+module.exports = {landSchema, forceLandSchema, validateLandData};
