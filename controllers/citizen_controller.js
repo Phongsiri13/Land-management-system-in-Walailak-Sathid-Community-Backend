@@ -1,6 +1,6 @@
 const citizenService = require("../services/CitizenService");
 const citizenModel = require("../model/citizenModel");
-const { message } = require("../validation/citizenSchema");
+// const { message } = require("../validation/citizenSchema");
 
 const addCitizenController = async (req, res) => {
   const citizenData = req.body;

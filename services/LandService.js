@@ -58,7 +58,6 @@ const addLand = async (landData) => {
   }
 };
 
-
 const UpdateLand = async (landData, id) => {
   try {
     // Logic before sending to db
@@ -111,7 +110,7 @@ const UpdateLand = async (landData, id) => {
 const UpdateLandUse = async (landData, id) => {
   console.log('-',landData)
   try {
-    // convert 
+    // Convert keys to database'S keys are
     const formattedLandUseData = {
       land_use_id: Number(landData.data.land_use_id),
       land_id: String(landData.data.land_id),

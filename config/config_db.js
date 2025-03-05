@@ -8,12 +8,12 @@ db_config.password = "123456789";
 db_config.database = "alro_land";
 
 // create connection to db
-const connection = mariadb.createPool({
-  host: db_config.host,
-  user: db_config.user,
-  password: db_config.password,
-  database: db_config.database,
-});
+// const connection = mariadb.createPool({
+//   host: db_config.host,
+//   user: db_config.user,
+//   password: db_config.password,
+//   database: db_config.database,
+// });
 
 // Create the connection pool
 const pool = mariadb.createPool(db_config);
@@ -141,10 +141,6 @@ async function getSearchOneDataFromDB(query, param) {
       conn.end(); // ปิดการเชื่อมต่อ (แต่ยังคงมี pool เปิดอยู่)
       console.log("Connection closed");
       console.log("-------------------------------");
-      //   setTimeout(()=>{
-      //     pool.end(); // ปิด pool หลังใช้งานเสร็จ
-      //     console.log('Connection pool closed.');
-      //   }, 3000)
     }
   }
 }
@@ -167,7 +163,45 @@ async function insertDataToDB(query, body) {
     // ถ้าการ Insert สำเร็จ, result จะมีจำนวนแถวที่ถูกเปลี่ยนแปลง
     return result.affectedRows > 0;
   } catch (err) {
-    throw new Error("Error executing query: " + err.stack);
+    // จัดการข้อผิดพลาดด้วย statusCode ที่เหมาะสม
+    let statusCode = 500;
+    let message = err.message;
+
+    // เช็คประเภทของข้อผิดพลาดที่เกี่ยวข้องกับฐานข้อมูล
+    if (err.code === "ER_DUP_ENTRY") {
+      // ข้อผิดพลาดเกี่ยวกับการแทรกข้อมูลซ้ำ
+      statusCode = 409;
+      message = "ชื่อผู้ใช้นี้มีอยู่ในระบบแล้ว กรุณาเลือกชื่อผู้ใช้ใหม่";
+    } else if (err.code === "ER_BAD_FIELD_ERROR") {
+      // ข้อผิดพลาดเกี่ยวกับฟิลด์ที่ไม่ถูกต้อง
+      statusCode = 400;
+      message = "ข้อมูลที่ส่งมาไม่ถูกต้อง";
+    } else if (err.code === "POOL_TIMEOUT") {
+      // ข้อผิดพลาดเมื่อไม่สามารถดึง connection จาก pool ได้
+      statusCode = 503;
+      message = "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ กรุณาลองใหม่ภายหลัง";
+    } else if (err.code === "ER_BAD_NULL_ERROR") {
+      // ข้อผิดพลาดเกี่ยวกับค่า NULL ที่ไม่ควรเป็น NULL
+      statusCode = 400;
+      message = "ไม่สามารถส่งข้อมูลที่เป็น NULL ได้";
+    } else if (err.code === "ER_SYNTAX_ERROR") {
+      // ข้อผิดพลาดเกี่ยวกับคำสั่ง SQL ผิดพลาด
+      statusCode = 400;
+      message = "คำสั่ง SQL ผิดพลาด กรุณาตรวจสอบข้อมูล";
+    } else {
+      // กรณีข้อผิดพลาดทั่วไป (ไม่ตรงกับประเภทที่ระบุไว้)
+      statusCode = 500;
+      message = "เกิดข้อผิดพลาดที่ไม่สามารถคาดการณ์ได้ กรุณาลองใหม่ภายหลัง";
+    }
+
+    // ส่งข้อมูลข้อผิดพลาด
+    throw {
+      statusCode: statusCode,
+      status: false,
+      message: message,
+      code: err.code,
+      stack: err.stack,
+    };
   } finally {
     if (conn) {
       conn.release(); // คืน connection กลับสู่ pool
@@ -268,5 +302,5 @@ module.exports = {
   getSearchOneDataFromDB,
   removeDataToDB,
   updateOneDataToDB,
-  getDataAllWithOneFromDB
+  getDataAllWithOneFromDB,
 };
