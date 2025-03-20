@@ -3,21 +3,23 @@ const express = require("express");
 const { relationController } = require("../controllers/relation_controller");
 const { addHeirController, addHeirAllController,
     getHeirFullNameCTL, getAllHeirCTL, getOneHeirCTL, updateHeirAllCTL,
-    getHeirAmountPageCTL, getAllHeirWithRelationCTL, getAllHeirWithRelationToCitizenCTL,getHeirNameCTL
+    getHeirAmountPageCTL, getAllHeirWithRelationCTL, getAllHeirWithRelationToCitizenCTL,
+    getOneRelationCitizenAndHeirCTL
  } = require("../controllers/heir_controller");
-const { pool } = require("../config/config_db");
 
 const router = express.Router();
 
 router.get("/relation", relationController);
 router.get("/fullname", getHeirFullNameCTL);
-router.get("/:id", getOneHeirCTL);
+router.get("/citizen/related/heir/:citizen_id", getOneRelationCitizenAndHeirCTL);
 router.get("/related_heir/:id", getAllHeirWithRelationCTL);
 router.get("/related_citizen/:id", getAllHeirWithRelationToCitizenCTL);
 router.get("/:amount/:page", getHeirAmountPageCTL);
-router.get("/fullname/suggest/:name", getHeirNameCTL);
-router.post("/searchHeirAll", getAllHeirCTL);   
+router.get("/:id", getOneHeirCTL);
+
+// POST 
 router.post("/", addHeirController);
+router.post("/searchHeirAll", getAllHeirCTL);   
 router.post("/all", addHeirAllController);
 router.put("/:id", updateHeirAllCTL);
 

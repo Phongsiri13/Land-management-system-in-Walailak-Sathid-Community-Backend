@@ -15,6 +15,7 @@ const documentLandTypeRouter = require("./routes/documentTypeRouter");
 const relationRouter = require("./routes/relationRouter");
 const uploadFileRouter = require("./routes/uploadFileRouter");
 const dashboardRouter = require("./routes/dashboardRouter");
+const adminRouter = require("./routes/adminRouter");
 
 // create API gateway
 const app = express();
@@ -35,7 +36,6 @@ app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
 // Data management
-app.use("/login", loginRouter);
 app.use("/register", registerRouter);
 app.use("/land", landRouter);
 app.use("/citizen", peopleRouter);
@@ -46,6 +46,9 @@ app.use("/manage_land_document_type", documentLandTypeRouter);
 app.use("/manage_relation", relationRouter);
 app.use("/upload_file", uploadFileRouter);
 app.use("/dashboard", dashboardRouter);
+app.use("/login", loginRouter);
+// Use admin router
+app.use('/admin', adminRouter);
 
 
 // Start the server

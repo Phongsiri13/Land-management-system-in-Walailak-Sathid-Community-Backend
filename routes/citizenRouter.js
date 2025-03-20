@@ -58,7 +58,7 @@ router.get("/history_citizen/:id", citizenController.getOneHistoryCitizenCTL);
 router.get("/fullname/:name", citizenController.getOneHistoryCitizenCTL);
 // get citizen amount
 router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
-router.get("/filter/:amount/:page", citizenController.getCitizenFilterAmountPageCTL);
+router.get("/filter/:amount/:page", citizenController.getCitizenFilterAmountPageCTL); // ไม่ใช้แล้ว
 router.get("/history_citizen/:amount/:page", citizenController.getCitizenHistoryAmountPageCTL);
 
 router.get("/prefix", prefixesController);

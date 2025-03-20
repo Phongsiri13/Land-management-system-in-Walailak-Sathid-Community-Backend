@@ -27,7 +27,6 @@ const dashboardCTL = async (req, res) => {
 
 const dashboardOneCTL = async (req, res) => {
   console.log("req-param-dash:", req.params);
-  // console.log("req-param-dash:", typeof req.params.id);
   // have to detect a value
   try {
     const results = await getOneDashboardModel(parseInt(req.params.id));

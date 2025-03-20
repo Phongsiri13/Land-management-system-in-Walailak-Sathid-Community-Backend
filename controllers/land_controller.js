@@ -9,9 +9,9 @@ const addLandController = async (req, res) => {
   try {
     const newLand = await landService.addLand(landData);
     console.log("newland:", newLand);
-    res.status(200).json({ message: "เพิ่มข้อมูลที่ดินสำเร็จ"}); // ใช้ 201 Created
+    res.status(200).json({ message: "เพิ่มข้อมูลที่ดินสำเร็จ" }); // ใช้ 201 Created
   } catch (err) {
-    console.error("Error inserting data: ",);
+    console.error("Error inserting data: ");
 
     // กรณีข้อมูลไม่ถูกต้อง (Validation Error)
     if (err.statusCode === 400) {
@@ -24,16 +24,10 @@ const addLandController = async (req, res) => {
     // กรณีข้อมูลซ้ำ (Duplicate Key Error ของ MongoDB หรือฐานข้อมูลอื่น)
     if (err.statusCode === 409) {
       return res.status(409).json({
-        message: "ข้อมูลซ้ำ เลขที่ดิน, แปลงเลขที่, หรือระวางนี้มีอยู่แล้วในระบบ",
+        message:
+          "ข้อมูลซ้ำ เลขที่ดิน, แปลงเลขที่, หรือระวางนี้มีอยู่แล้วในระบบ",
       });
     }
-
-    // จัดการข้อผิดพลาดของฐานข้อมูล (เช่น SQL หรือ MongoDB)
-    // if (err.name === "SequelizeUniqueConstraintError") {
-    //   return res.status(409).json({
-    //     message: "ข้อมูลซ้ำ ไม่สามารถเพิ่มเลขที่ดินที่มีอยู่แล้ว",
-    //   });
-    // }
 
     // กรณีข้อผิดพลาดทั่วไป (Internal Server Error)
     res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
@@ -50,8 +44,26 @@ const updateLandCTL = async (req, res) => {
     const newLand = await landService.UpdateLand(landData, id);
     res.status(200).json(newLand);
   } catch (err) {
-    console.error("Error inserting data: ", err);
-    res.status(500).json({ message: err.message });
+    console.log('err-xa:',err)
+    // กรณีข้อมูลไม่ถูกต้อง (Validation Error)
+    if (err.statusCode === 400) {
+      return res.status(400).json({
+        statusCode: err.statusCode,
+        message: "ข้อมูลไม่ถูกต้อง",
+        details: err.errors || err.message,
+      });
+    }
+
+    // กรณีข้อมูลซ้ำ (Duplicate Key Error ของ MongoDB หรือฐานข้อมูลอื่น)
+    if (err.statusCode === 409) {
+      return res.status(409).json({
+        message:
+          "ข้อมูลซ้ำ เลขที่ดิน, แปลงเลขที่, หรือระวางนี้มีอยู่แล้วในระบบ",
+      });
+    }
+
+    // กรณีข้อผิดพลาดทั่วไป (Internal Server Error)
+    res.status(500).json({ message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์" });
   }
 };
 
@@ -90,15 +102,17 @@ const getLandAmountPageCTL = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+// ประวัติการแก้ไขที่ดิน
 const getLandHistoryAmountPageCTL = async (req, res) => {
   const landData = req.params;
+  const landQueryData = req.query;
   console.log("land-data:", landData);
+  console.log("land-data-query:", landQueryData);
   try {
-    const newLand = await landService.getLandHistoryPage(landData);
-    if (!newLand) {
-      return res.status(422);
-    }
+    const newLand = await landService.getLandHistoryPage(
+      landQueryData,
+      landData
+    );
     res.status(200).json(newLand);
   } catch (err) {
     console.error("Error inserting data: ", err);

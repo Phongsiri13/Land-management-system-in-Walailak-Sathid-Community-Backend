@@ -1,5 +1,6 @@
 const heirService = require("../services/HeirService");
 const heirModel = require("../model/heirModel");
+const citizenModel = require("../model/citizenModel")
 
 const addHeirController = async (req, res) => {
   const HeirData = req.body;
@@ -47,32 +48,37 @@ const addHeirAllController = async (req, res) => {
 const updateHeirAllCTL = async (req, res) => {
   const HeirData = req.body;
   const HEIR_ID = req.params.id;
-  console.log("heir:", HeirData);
+  // console.log("heir:", HeirData);
 
   try {
     const heir = await heirService.updateHeir(HeirData, HEIR_ID);
     if (!heir) {
       return res.status(400).json({
-        message: "เพิ่มข้อมูลไม่สำเร็จ",
+        message: "อัพเดทข้อมูลไม่สำเร็จ",
         status: false,
       });
     }
     res.status(200).json({
-      message: "เพิ่มข้อมูลสำเร็จ!",
+      message: "อัพเดทข้อมูลสำเร็จ!",
       status: heir,
     });
   } catch (err) {
-    console.error("Error inserting data: ", err);
+    console.error("Error update data: ", err);
     res.status(500).json({ message: err.message });
   }
 };
 
 const getHeirFullNameCTL = async (req, res) => {
   const { fname, lname } = req.query;
-  console.log("fname:", fname, ", lname:", lname);
+  // console.log("fname:", fname, ", lname:", lname);
+
+  const decodedFname = decodeURIComponent(fname);
+  const decodedLname = decodeURIComponent(lname);
+  // console.log("fname:", decodedFname, ", lname:", decodedLname);
+
 
   try {
-    const HeirData = { first_name: fname, last_name: lname };
+    const HeirData = { first_name: decodedFname, last_name: decodedLname };
     const heir = await heirService.getFullNameHeir(HeirData);
     res.json(heir);
   } catch (err) {
@@ -197,11 +203,15 @@ const getHeirAmountPageCTL = async (req, res) => {
 };
 
 const getHeirNameCTL = async (req, res) => {
-  const { fullname } = req.query;
-  console.log("Fullname:", fullname);
+  const heir_name = req.params;
+
+  // if(!heir_name.fname || !heir_name.lname){
+  //   return res.status(404).json({"message":"ใส่ข้อมูลไม่ครบถ้วน"})
+  // }
 
   try {
-    const HeirData = { first_name: fname, last_name: lname };
+    // return res.status(200).json({ message: 'xa' });
+    const HeirData = { first_name: decodeURIComponent(heir_name.fname), last_name: decodeURIComponent(heir_name.lname) };
     const heir = await heirService.getFullNameHeir(HeirData);
     res.json(heir);
   } catch (err) {
@@ -209,6 +219,20 @@ const getHeirNameCTL = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+const getOneRelationCitizenAndHeirCTL = async (req, res) => {
+  const heirData = req.params.citizen_id;
+  console.log(heirData);
+
+  try {
+    const heir = await citizenModel.getRelationWithHeir(heirData);
+    res.status(200).json(heir);
+  } catch (err) {
+    console.error("Error inserting data: ", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 
 module.exports = {
   addHeirController,
@@ -220,5 +244,6 @@ module.exports = {
   getHeirAmountPageCTL,
   getAllHeirWithRelationCTL,
   getAllHeirWithRelationToCitizenCTL,
-  getHeirNameCTL
+  getHeirNameCTL,
+  getOneRelationCitizenAndHeirCTL
 };

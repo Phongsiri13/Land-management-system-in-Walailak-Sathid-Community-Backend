@@ -27,7 +27,7 @@ const landModel = {
 
     if (searchQuery && searchType) {
       if (searchType === "LAND") {
-        whereClause += ` AND l.id_land LIKE ?`;
+        whereClause += ` AND l.tf_number LIKE ?`;
         params.push(`%${searchQuery}%`);
       } else if (searchType === "NAME") {
         whereClause += `
@@ -73,7 +73,8 @@ const landModel = {
             CAST(l.id_land AS CHAR) AS id_land, 
             l.current_soi,
             l.current_land_status, 
-            l.number, 
+            l.number,
+            l.tf_number, 
             l.active,
             p.phone_number
         FROM land l
@@ -100,44 +101,91 @@ const landModel = {
         ${whereClause};
     `;
     const [countResult] = await getSearchDataFromDB(countQuery, params);
-    console.log('results:',results)
+    console.log("results:", results);
 
     return {
       results,
       totalCount: countResult.totalCount, // ค่าเป็น String แล้ว
     };
   },
-
-  landHistoryAmountPage: async (page, size) => {
+  landHistoryAmountPage: async (page, size, filter = {}) => {
     const routePage = parseInt(page); // หน้า (default = 1)
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
     const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    const { searchType, searchQuery } = filter;
 
+    // สร้างเงื่อนไข WHERE สำหรับการกรองข้อมูล
+    let whereClause = "WHERE 1=1";
+    const params = [];
+
+    if (searchQuery && searchType) {
+      if (searchType === "LAND") {
+        whereClause += ` AND l.tf_number LIKE ?`;
+        params.push(`%${searchQuery}%`);
+      } else if (searchType === "NAME") {
+        whereClause += `
+               AND (
+                   p.first_name LIKE ? 
+                   OR p.last_name LIKE ? 
+                   OR CONCAT(p.first_name, ' ', p.last_name) LIKE ? 
+                   OR REPLACE(CONCAT(p.first_name, ' ', p.last_name), ' ', '') LIKE ?
+               )`;
+        params.push(
+          `%${searchQuery}%`,
+          `%${searchQuery}%`,
+          `%${searchQuery}%`,
+          `%${searchQuery.replace(/\s/g, "")}%`
+        );
+      }
+    }
+
+    // Query เพื่อดึงข้อมูลที่กรองแล้ว
     const query = `
-SELECT 
-    CONCAT(
-        COALESCE(pr.prefix_name, ''), 
-        ' ', 
-        COALESCE(p.first_name, ''), 
-        ' ', 
-        COALESCE(p.last_name, '')
-    ) AS fullname,
-    l.id_h_land,
-    land_status_name, 
-    l.land_id, 
-    l.current_soi,
-    l.current_land_status, 
-    l.number, 
-    l.active,
-    p.phone_number
-  FROM history_land as l
-  LEFT JOIN citizen p ON l.id_card = p.ID_CARD
-  LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
-  LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
-  ORDER BY l.id_h_land DESC
-  LIMIT ? OFFSET ?;`;
-    const results = await getSearchDataFromDB(query, [limit, offset]);
-    return results;
+       SELECT 
+           CONCAT(
+               COALESCE(pr.prefix_name, ''), 
+               '', 
+               COALESCE(p.first_name, ''), 
+               ' ', 
+               COALESCE(p.last_name, '')
+           ) AS fullname,
+           land_status_name, 
+           CAST(l.land_id AS CHAR) AS land_id, 
+           l.current_soi,
+           l.current_land_status, 
+           l.number,
+           l.tf_number, 
+           l.active,
+           p.phone_number,
+           l.id_h_land
+       FROM history_land l
+       LEFT JOIN citizen p ON l.id_card = p.ID_CARD
+       LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
+       LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
+       ${whereClause}
+       ORDER BY id_h_land DESC
+       LIMIT ? OFFSET ?;
+   `;
+    const results = await getSearchDataFromDB(query, [
+      ...params,
+      limit,
+      offset,
+    ]);
+
+    // Query เพื่อนับจำนวนข้อมูลทั้งหมดหลังกรอง
+    const countQuery = `
+       SELECT CAST(COUNT(l.land_id) AS CHAR) AS totalCount
+       FROM history_land l
+       LEFT JOIN citizen p ON l.id_card = p.ID_CARD
+       LEFT JOIN prefix pr ON p.prefix_id = pr.prefix_id
+       LEFT JOIN land_status ls ON l.current_land_status = ls.ID_land_status
+       ${whereClause};
+   `;
+    const [countResult] = await getSearchDataFromDB(countQuery, params);
+    return {
+      results,
+      totalCount: countResult.totalCount, // ค่าเป็น String แล้ว
+    };
   },
   landHistoryLandHistoryOneCompare: async (land_h_id) => {
     const query = `
@@ -208,7 +256,7 @@ JOIN
       };
     } catch (err) {
       await connection.rollback();
-    
+
       console.error("❌ Transaction Error:", err.message);
       if (err.code === "ER_DUP_ENTRY") {
         // MySQL error 1062
@@ -219,15 +267,14 @@ JOIN
           message: err.message,
         };
       }
-    
+
       console.error("❌ Transaction Error:", err.message);
       throw {
         statusCode: 500, // Internal Server Error
         status: false,
         message: "ระบบขัดข้อง กรุณาลองใหม่ภายหลัง",
       };
-    }
-    finally {
+    } finally {
       connection.release();
     }
   },
@@ -269,6 +316,10 @@ JOIN
       await connection.execute(
         `UPDATE land
       SET 
+        tf_number = ?, 
+        spk_area = ?, 
+        number = ?, 
+        volume = ?, 
         l_house_number = ?, 
         current_soi = ?, 
         rai = ?, 
@@ -311,10 +362,25 @@ JOIN
 
       await connection.commit(); // บันทึก Transaction
       return { success: true, message: "Transaction successful" };
-    } catch (error) {
+    } catch (err) {
       await connection.rollback(); // ย้อนกลับการเปลี่ยนแปลงเมื่อเกิดข้อผิดพลาด
-      console.error("Transaction failed:", error); // บันทึกข้อผิดพลาด
-      throw error; // ส่งต่อข้อผิดพลาด
+      console.error("❌ Transaction Error:", err.message);
+      if (err.code === "ER_DUP_ENTRY") {
+        // MySQL error 1062
+        console.error("Duplicate Entry Error:", err.message);
+        throw {
+          statusCode: 409, // 409 Conflict
+          status: false,
+          message: err.message,
+        };
+      }
+
+      console.error("❌ Transaction Error:", err.message);
+      throw {
+        statusCode: 500, // Internal Server Error
+        status: false,
+        message: "ระบบขัดข้อง กรุณาลองใหม่ภายหลัง",
+      };
     } finally {
       connection.release(); // คืน Connection กลับ Pool
     }
@@ -424,6 +490,12 @@ JOIN
   getAllLiveFileByID: async (land_id) => {
     const query = `SELECT * FROM document_lives WHERE doc_land_id= ? ORDER BY id_live_doc DESC ;`;
     const results = await getSearchOneDataFromDB(query, land_id);
+    return results;
+  },
+  getAllDocumentFileByID: async (land_id) => {
+    console.log("Land_id:", land_id);
+    const query = `SELECT * FROM document_lands WHERE land_id = ? ORDER BY id_doc DESC;`;
+    const results = await getSearchOneDataFromDB(query, [land_id]);
     return results;
   },
 };

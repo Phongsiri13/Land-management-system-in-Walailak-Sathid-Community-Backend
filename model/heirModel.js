@@ -58,13 +58,9 @@ const heirModel = {
   getFullnameHeir: async (fullname) => {
     console.log("fullname:", fullname);
 
-    const query = "SELECT * FROM heir WHERE first_name = ? AND last_name = ?";
+    const query = "SELECT * FROM heir WHERE first_name = ? AND last_name = ? LIMIT 1;";
     const resultsHeir = await getSearchDataFromDB(query, fullname);
-    if (resultsHeir.length > 0) {
-      return true; // If there are matching heirs, return true
-    } else {
-      return false; // If no match is found, return false
-    }
+    return resultsHeir;
   },
   getSearchFullHeirs: async (heirList) => {
     console.log("fullname:", heirList);

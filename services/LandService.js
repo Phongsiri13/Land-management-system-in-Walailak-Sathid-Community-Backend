@@ -1,6 +1,6 @@
 const landModel = require("../model/landModel");
 const landSchemaCheck = require("../validation/landSchema");
-const {landUseSchema} = require("../validation/landuseSchema");
+const { landUseSchema } = require("../validation/landuseSchema");
 
 // SV = service
 
@@ -67,11 +67,13 @@ const UpdateLand = async (landData, id) => {
     if (error) {
       throw new Error(`Validation Error: ${error.details[0].message}`);
     }
-
-    // Detect total of rai
-
+  
     // ✅ แปลงค่าตัวเลขให้เป็น float หรือ null (กรณีไม่มีค่า)
     const values = [
+      value.tf_number,
+      value.spk_area,
+      value.number,
+      value.volume,
       value.address,
       value.soi,
       parseFloat(value.rai) || null,
@@ -90,25 +92,21 @@ const UpdateLand = async (landData, id) => {
     // บันทึกข้อมูลลงฐานข้อมูล
     const result = await landModel.updateLandOne(values, id);
     console.log("result:", result);
-    // แจ้งเตือนเมื่อสำเร็จ
-    if (result) {
-      // ตรวจสอบว่ามีแถวถูกเพิ่มจริง
-      console.log("เพิ่มข้อมูลที่ดินสำเร็จ!");
-      return {
-        success: true,
-        message: "อัพเดทข้อมูลที่ดินสำเร็จ!",
-      };
-    } else {
-      console.log("ไม่สามารถอัพเดทข้อมูลได้!");
-      return { success: false, message: "ไม่สามารถอัพเดทข้อมูลได้!" };
-    }
+    return {
+      success: true,
+      message: "อัพเดทข้อมูลที่ดินสำเร็จ!",
+    };
   } catch (err) {
-    throw new Error(`Error updating citizen: ${err.message}`);
+    console.log('erx:',err)
+    throw {
+      statusCode: err.statusCode || 500, // ใช้ 500 หากไม่มี statusCode
+      message: `${err.message}`,
+    };
   }
 };
 
 const UpdateLandUse = async (landData, id) => {
-  console.log('-',landData)
+  console.log("-", landData);
   try {
     // Convert keys to database'S keys are
     const formattedLandUseData = {
@@ -117,7 +115,7 @@ const UpdateLandUse = async (landData, id) => {
       rubber_tree: landData.data.rubber_tree == true ? "1" : "0",
       fruit_orchard: landData.data.fruit_orchard == true ? "1" : "0",
       livestock_farming: landData.data.livestock_farming == true ? "1" : "0",
-      other: landData.data.other == true  ? "1" : "0", 
+      other: landData.data.other == true ? "1" : "0",
       details: String(landData.data.details || ""),
     };
 
@@ -163,11 +161,11 @@ const UpdateLandUse = async (landData, id) => {
 // page and limit
 const getLandPage = async (query, page_control) => {
   // console.log('query:',query)
-  const {amount, page} = page_control
+  const { amount, page } = page_control;
   // console.log('page_control:',page_control)
   try {
     const result = await landModel.landAmountPage(page, amount, query);
-    console.log("re:",result)
+    console.log("re:", result);
     return {
       success: true,
       data: result,
@@ -177,13 +175,12 @@ const getLandPage = async (query, page_control) => {
   }
 };
 
-const getLandHistoryPage = async (land_page_amount) => {
-  // console.log('param:',land_page_amount.params.amount, ' : ', land_page_amount.params.page)
-  const {amount, page } = land_page_amount;
-  console.log(land_page_amount)
+const getLandHistoryPage = async (query, land_page_amount) => {
+  const { amount, page } = land_page_amount;
+  console.log("query:", query);
   try {
-    const result = await landModel.landHistoryAmountPage(page,amount);
-    console.log('re-sult:',result)
+    const result = await landModel.landHistoryAmountPage(page, amount, query);
+    // console.log('re-sult:',result)
     return {
       success: true,
       data: result,
@@ -191,12 +188,12 @@ const getLandHistoryPage = async (land_page_amount) => {
   } catch (error) {
     throw new Error(`Error adding citizen: ${error.message}`);
   }
-}
+};
 
 module.exports = {
   addLand,
   getLandPage,
   UpdateLand,
   UpdateLandUse,
-  getLandHistoryPage
+  getLandHistoryPage,
 };

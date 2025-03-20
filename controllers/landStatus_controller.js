@@ -1,6 +1,11 @@
 // Model
-const { landStatusModel, createStatusModel, getOneStatusActiveModel,
-  getOneStatusModel, deleteStatusModel,updateOneStatusModel,
+const {
+  landStatusModel,
+  createStatusModel,
+  getOneStatusActiveModel,
+  getOneStatusModel,
+  deleteStatusModel,
+  updateOneStatusModel,
 } = require("../model/commonModel");
 
 const landStatusController = async (req, res) => {
@@ -14,8 +19,8 @@ const landStatusController = async (req, res) => {
 };
 
 const getOneStatusController = async (req, res) => {
-  const { id } = req.params; 
-  console.log('getOne:', req.params)
+  const { id } = req.params;
+  console.log("getOne:", req.params);
 
   if (!id) {
     return res.status(400).send({ message: "ID parameter is required" });
@@ -23,12 +28,12 @@ const getOneStatusController = async (req, res) => {
   console.log("--------------- LandStatus get one ---------------");
   try {
     const values = [id];
-    console.log('v:',values)
+    console.log("v:", values);
     const results = await getOneStatusModel(values);
     if (results) {
       return res.json({
         success: true,
-        data: results
+        data: results,
       });
     } else {
       console.log("ไม่สามารถเพิ่มข้อมูลได้!");
@@ -46,22 +51,36 @@ const createStatusController = async (req, res) => {
     const values = [newStatus.newNameStatus];
     // console.log('v:',values)
     const results = await createStatusModel(values);
-    if (results) {
-      return res.json({
-        success: true,
-        message: "เพิ่มข้อมูลสถานะที่ดินสำเร็จ!",
-      });
-    } else {
-      console.log("ไม่สามารถเพิ่มข้อมูลได้!");
-      return res.json({ success: false, message: "ไม่สามารถเพิ่มข้อมูลได้!" });
-    }
+    return res.json({
+      success: true,
+      message: "เพิ่มข้อมูลสถานะที่ดินสำเร็จ!",
+    });
   } catch (err) {
-    res.status(500).send("Database query error");
+    console.error("err:", err);
+    // ตรวจจับข้อผิดพลาด Duplicate Entry (SQL Error Code 1062)
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        statusCode: 409,
+        status: false,
+        message: "ชื่อนี้มีอยู่ในระบบแล้ว กรุณาเลือกชื่อใหม่",
+        // code: err.code,
+        // stack: err.stack, // ส่ง stack ไปด้วยเพื่อใช้ debug
+      });
+    }
+
+    // จัดการข้อผิดพลาดทั่วไปของฐานข้อมูล
+    res.status(500).json({
+      statusCode: 500,
+      status: false,
+      message: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล",
+      // code: err.code || "UNKNOWN_ERROR",
+      // stack: err.stack,
+    });
   }
 };
 
 const updateOneStatusController = async (req, res) => {
-  const { land_status_name } = req.body;  // Access the sent data from the request body
+  const { land_status_name } = req.body; // Access the sent data from the request body
   const id = req.params.id; // Get the ID from the URL
   console.log("id:", req.body);
   console.log("id-type:", id);
@@ -72,25 +91,39 @@ const updateOneStatusController = async (req, res) => {
   console.log("--------------- LandStatus updateOne ---------------");
   try {
     const values = [land_status_name, id];
-    console.log('vvv:',values);
+    console.log("vvv:", values);
     const results = await updateOneStatusModel(values);
-    if (results) {
-      return res.json({
-        success: true,
-        message: "อัพเดทสำเร็จ!",
-      });
-    } else {
-      console.log("ไม่สามารถอัพเดทข้อมูลได้!");
-      return res.json({ success: false, message: "ไม่สามารถอัพเดทข้อมูลได้!" });
-    }
+    return res.json({
+      success: true,
+      message: "อัพเดทสำเร็จ!",
+    });
   } catch (err) {
-    res.status(500).send("Database query error");
+    console.error("err:", err);
+    // ตรวจจับข้อผิดพลาด Duplicate Entry (SQL Error Code 1062)
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        statusCode: 409,
+        status: false,
+        message: "ชื่อนี้มีอยู่ในระบบแล้ว กรุณาเลือกชื่อใหม่",
+        // code: err.code,
+        // stack: err.stack, // ส่ง stack ไปด้วยเพื่อใช้ debug
+      });
+    }
+
+    // จัดการข้อผิดพลาดทั่วไปของฐานข้อมูล
+    res.status(500).json({
+      statusCode: 500,
+      status: false,
+      message: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล",
+      // code: err.code || "UNKNOWN_ERROR",
+      // stack: err.stack,
+    });
   }
 };
 
 const getOneStatusActiveCTL = async (req, res) => {
-  const { id } = req.params; 
-  console.log('getOne:', req.params)
+  const { id } = req.params;
+  console.log("getOne:", req.params);
 
   if (!id) {
     return res.status(400).send({ message: "ID parameter is required" });
@@ -98,12 +131,12 @@ const getOneStatusActiveCTL = async (req, res) => {
   console.log("--------------- LandStatusActive get one ---------------");
   try {
     const values = [id];
-    console.log('v:',values)
+    console.log("v:", values);
     const results = await getOneStatusActiveModel(values);
     if (results) {
       return res.json({
         success: true,
-        data: results
+        data: results,
       });
     } else {
       console.log("ไม่สามารถเพิ่มข้อมูลได้!");
@@ -118,14 +151,14 @@ const deleteStatusController = async (req, res) => {
   const { id } = req.params; // Access 'id' from the query string
   console.log("id:", id);
   console.log("id-type:", req.body);
-  console.log('hi')
+  console.log("hi");
 
   if (!id) {
     return res.status(400).send({ message: "ID parameter is required" });
   }
   console.log("--------------- LandStatus delete ---------------");
   try {
-    const values = [req.body.id , id];
+    const values = [req.body.id, id];
     const results = await deleteStatusModel(values);
     if (results) {
       return res.json({
@@ -147,5 +180,5 @@ module.exports = {
   createStatusController,
   deleteStatusController,
   updateOneStatusController,
-  getOneStatusActiveCTL
+  getOneStatusActiveCTL,
 };

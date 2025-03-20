@@ -65,12 +65,7 @@ const addRelationalToHeirsAll = async (data) => {
 const getFullNameHeir = async (data) => {
   const heirData = data;
   try {
-    const { error, value } = heirFullnameSchema.validate(heirData);
-    if (error) {
-      throw new Error(`Validation Error: ${error.details[0].message}`);
-    }
-
-    const values = [value.first_name, value.last_name];
+    const values = [heirData.first_name, heirData.last_name];
     const result = await heirModel.getFullnameHeir(values);
     return result;
   } catch (err) {

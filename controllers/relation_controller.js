@@ -5,7 +5,7 @@ const {
   createRelationModel,
   updateRelationModel,
   deleteRelationModel,
-  getOneRelationActiveModel
+  getOneRelationActiveModel,
 } = require("../model/commonModel");
 const { getDataAllWithOneFromDB } = require("../config/config_db");
 
@@ -73,28 +73,37 @@ const getRelationActiveCTL = async (req, res) => {
 };
 
 const createRelationController = async (req, res) => {
-  const { label } = req.body;
-  console.log("--------------- Relation create ---------------");
+  const { label} = req.body;
   try {
     const values = [label];
     console.log("v:", values);
     const results = await createRelationModel(values);
-    if (results) {
-      return res.json({
-        success: true,
-        message: "เพิ่มข้อมูลสถานะที่ดินสำเร็จ!",
-      });
-    } else {
-      console.log("ไม่สามารถเพิ่มข้อมูลได้!");
-      return res.json({ success: false, message: "ไม่สามารถเพิ่มข้อมูลได้!" });
-    }
+    return res.json({
+      success: true,
+      message: "เพิ่มข้อมูลสถานะที่ดินสำเร็จ!",
+    });
   } catch (err) {
-    res.status(500).send("Database query error");
+    // console.error("err:", err);
+    // ตรวจจับข้อผิดพลาด Duplicate Entry (SQL Error Code 1062)
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        statusCode: 409,
+        status: false,
+        message: "ชื่อนี้มีอยู่ในระบบแล้ว กรุณาเลือกชื่อใหม่",
+      });
+    }
+
+    // จัดการข้อผิดพลาดทั่วไปของฐานข้อมูล
+    res.status(500).json({
+      statusCode: 500,
+      status: false,
+      message: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล",
+    });
   }
 };
 
 const updateRelationController = async (req, res) => {
-  const { label } = req.body; // Access the sent data from the request body
+  const { label} = req.body; // Access the sent data from the request body
   const id = req.params.id; // Get the ID from the URL
 
   if (!id) {
@@ -102,20 +111,29 @@ const updateRelationController = async (req, res) => {
   }
   console.log("--------------- relation updateOne ---------------");
   try {
-    const values = [label, id];
+    const values = [label,id];
     console.log(values);
     const results = await updateRelationModel(values);
-    if (results) {
-      return res.json({
-        success: true,
-        message: "อัพเดทสำเร็จ!",
-      });
-    } else {
-      console.log("ไม่สามารถอัพเดทข้อมูลได้!");
-      return res.json({ success: false, message: "ไม่สามารถอัพเดทข้อมูลได้!" });
-    }
+    return res.json({
+      success: true,
+      message: "อัพเดทสำเร็จ!",
+    });
   } catch (err) {
-    res.status(500).send("Database query error");
+    // ตรวจจับข้อผิดพลาด Duplicate Entry (SQL Error Code 1062)
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({
+        statusCode: 409,
+        status: false,
+        message: "ชื่อนี้มีอยู่ในระบบแล้ว กรุณาเลือกชื่อใหม่",
+      });
+    }
+
+    // จัดการข้อผิดพลาดทั่วไปของฐานข้อมูล
+    res.status(500).json({
+      statusCode: 500,
+      status: false,
+      message: "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล",
+    });
   }
 };
 
@@ -132,7 +150,7 @@ const deleteRelationController = async (req, res) => {
 
   try {
     const values = [active.id, id];
-    console.log('v:',values)
+    console.log("v:", values);
     const results = await deleteRelationModel(values);
     if (results) {
       return res.json({
@@ -204,5 +222,5 @@ module.exports = {
   updateRelationController,
   deleteRelationController,
   relationWithCitizenCTL,
-  getRelationActiveCTL
+  getRelationActiveCTL,
 };

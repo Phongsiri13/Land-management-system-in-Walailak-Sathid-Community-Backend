@@ -2,10 +2,146 @@ require("dotenv").config();
 // Model
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const { userSchema, userLoginSchema } = require("../validation/userSchema");
+const {
+  userSchema,
+  userLoginSchema,
+  userPersonalDataUpdateSchema,
+} = require("../validation/userSchema");
 const userModel = require("../model/userModel");
 
 const SECRET_KEY = process.env.SECRET_KEY;
+
+const getAllUsers = async (req, res) => {
+  const data = req.body;
+  console.log("data:", data);
+
+  try {
+    const user_model = await userModel.allUser();
+    return res
+      .status(200)
+      .json({ message: "ดึงข้อมูลผู้ใช้สำเร็จ!", data: user_model });
+  } catch (err) {
+    return res.status(500).json({ message: "ระบบขัดข้อง" });
+  }
+};
+
+const updatePersonalUserCTL = async (req, res) => {
+  const data = req.body; // Access the sent data from the request body
+  const id = req.params.id; // Get the ID from the URL
+
+  if (!id) {
+    return res.status(400).send({ message: "ID parameter is required" });
+  }
+  console.log("data:", data);
+
+  console.log("--------------- User update data ---------------");
+  // แยก password และ confirm_password ออกจาก data
+  const { password, confirm_password, ...filteredData } = data;
+  let status_password = false;
+  // เก็บ password และ confirm_password เฉพาะเมื่อมีค่า
+  const sensitiveData = {};
+  if (password !== undefined) {
+    sensitiveData.password = password;
+    status_password = true;
+  }
+
+  console.log("sensitiveData:", sensitiveData);
+  console.log("statusData:", status_password);
+  try {
+    const values = [];
+    if (status_password === false) {
+      const { error, value } =
+        userPersonalDataUpdateSchema.validate(filteredData);
+
+      if (error) {
+        throw {
+          statusCode: 400, // Bad Request
+          message: `ข้อมูลที่ให้มาไม่ถูกต้อง!`,
+        };
+      }
+      values.push(value.id_role, value.user_prefix || null,
+        value.first_name || null,value.last_name || null,
+        value.phone_number || null, id)
+      // const values = [
+      //   value.id_role,
+      //   value.user_prefix,
+      //   value.first_name,
+      //   value.last_name,
+      //   value.phone_number,
+      //   id,
+      // ];
+    }else{
+      const { error, value } =
+        userPersonalDataUpdateSchema.validate(filteredData);
+
+      if (error) {
+        throw {
+          statusCode: 400, // Bad Request
+          message: `ข้อมูลที่ให้มาไม่ถูกต้อง!`,
+        };
+      }
+      const hashedPassword = await bcrypt.hash(sensitiveData.password, 8);
+
+      values.push(value.id_role, value.user_prefix, value.first_name, value.last_name, value.phone_number,
+        hashedPassword, id
+      );
+      console.log(values)
+    }
+
+    // console.log(values);
+    const results = await userModel.userInformationUpdate(values, status_password);
+    if (results == true) {
+      return res.status(200).json({
+        success: true,
+        message: "อัพเดทสิทธิ์ผู้ใช้สำเร็จ!",
+      });
+    } else {
+      throw {
+        statusCode: 400,
+        success: false,
+        message: "อัพเดทสิทธิ์ผู้ใช้ไม่สำเร็จ!",
+      };
+    }
+  } catch (err) {
+    console.log(err);
+    if (err.statusCode == 400) {
+      return res.json(err);
+    }
+    res.status(500).send("ระบบขัดข้อง");
+  }
+};
+
+const delUserCTL = async (req, res) => {
+  const userActived = req.body; // Access the sent data from the request body
+  const id = req.params.id; // Get the ID from the URL
+
+  if (!id) {
+    return res.status(400).send({ message: "ID parameter is required" });
+  }
+
+  try {
+    const values = [userActived.user_actived, id, userActived.username];
+    const results = await userModel.delUser(values);
+    if (results == true) {
+      return res.status(200).json({
+        success: true,
+        message: "ลบสิทธิ์ผู้ใช้สำเร็จ!",
+      });
+    } else {
+      throw {
+        statusCode: 400,
+        success: false,
+        message: "ลบสิทธิ์ผู้ใช้ไม่สำเร็จ!",
+      };
+    }
+  } catch (err) {
+    console.log(err);
+    if (err.statusCode == 400) {
+      return res.json(err);
+    }
+    res.status(500).send("ระบบขัดข้อง");
+  }
+};
 
 const registerCTL = async (req, res) => {
   const data = req.body;
@@ -30,7 +166,15 @@ const registerCTL = async (req, res) => {
     value["password"] = hashedPassword;
 
     // แปลงข้อมูลเป็น array ก่อนส่งไป registerUser
-    const valuesArray = Object.values(value);
+    const valuesArray = [
+      value.username,
+      value.password,
+      value.user_prefix,
+      value.first_name,
+      value.last_name,
+      value.phone_number,
+      value.id_role,
+    ];
     console.log("valuesArray:", valuesArray);
 
     // บันทึกลงฐานข้อมูล
@@ -86,7 +230,8 @@ const loginCTL = async (req, res) => {
     if (!user_model || user_model.length === 0) {
       throw {
         statusCode: 404, // Not Found
-        message: "ไม่พบผู้ใช้นี้ในระบบ!",
+        status: false,
+        message: "Username or Password ไม่ถูกต้อง!",
       };
     }
 
@@ -105,7 +250,7 @@ const loginCTL = async (req, res) => {
     const TOKEN_TIME = "1h";
     const USERNAME = user_model[0].username;
     const USER_ID = user_model[0].user_id;
-    const USER_ROLE = user_model[0].id_role
+    const USER_ROLE = user_model[0].id_role;
     console.log("::::", USER_ROLE);
 
     // send jwt token
@@ -140,7 +285,9 @@ const loginCTL = async (req, res) => {
         maxAge: 3600000, // 1 hour
       });
 
-      return res.status(200).json({ message: "Login successful!", role: USER_ROLE});
+      return res
+        .status(200)
+        .json({ message: "Login successful!", role: USER_ROLE });
     } else {
       return res
         .status(500)
@@ -160,6 +307,9 @@ const loginCTL = async (req, res) => {
 };
 
 module.exports = {
+  getAllUsers,
+  updatePersonalUserCTL,
   registerCTL,
   loginCTL,
+  delUserCTL,
 };

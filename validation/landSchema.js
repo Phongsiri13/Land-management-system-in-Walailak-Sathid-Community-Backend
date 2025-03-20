@@ -39,8 +39,11 @@ const validateLandData = (landData) => {
   return value; // คืนค่าข้อมูลที่ถูกต้อง
 };
 
-
 const forceLandSchema = Joi.object({
+  tf_number: Joi.string().required().max(5), // รหัสแปลงที่ดิน (string)
+  spk_area: Joi.string().required().max(11), // พื้นที่ ส.ป.ก. (string)
+  number: Joi.string().required().max(5), // หมายเลข (string)
+  volume: Joi.string().required().max(5), // ปริมาณ (string)
   address: Joi.string().max(6), // ที่อยู่ (string)
   soi: Joi.number().integer().min(0).max(13).required(), // ซอย (number, ต้องเป็นจำนวนเต็มบวก)
   rai: Joi.number().integer().min(0).max(5), // ไร่ (0-5 ไร่)
@@ -61,4 +64,4 @@ const forceLandSchema = Joi.object({
     .required(), // บัตรประชาชน (13 หลัก)
 });
 
-module.exports = {landSchema, forceLandSchema, validateLandData};
+module.exports = { landSchema, forceLandSchema, validateLandData };

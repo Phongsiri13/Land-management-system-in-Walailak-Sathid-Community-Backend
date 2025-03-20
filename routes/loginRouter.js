@@ -40,7 +40,7 @@ router.post("/logout", (req, res) => {
   res.status(200).json({ message: "Logged out successfully!" });
 });
 
-// ✅ Route ที่ต้องการให้เฉพาะ R001 (Admin) ใช้งานได้
+// // ✅ Route ที่ต้องการให้เฉพาะ R001 (Admin) ใช้งานได้
 // router.get("/admin", authenticateJWT, authorizeRoles("R001"), (req, res) => {
 //   res.json({ message: "Admin access granted!" });
 // });

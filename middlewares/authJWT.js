@@ -30,7 +30,7 @@ const authenticateJWT = async (req, res, next) => {
       // ดึงข้อมูลจากฐานข้อมูล
       const query = `SELECT users.jwt_token, users.id_role, roles.role_name FROM users 
         JOIN roles ON users.id_role = roles.role_id
-        WHERE username = ?;`;
+        WHERE users.username = ? AND users.user_actived = '1';`;
       const results = await getDataAllWithOneFromDB(query, [user.username]);
       console.log("jwt:", results);
 

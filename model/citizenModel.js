@@ -134,7 +134,7 @@ LIMIT 1;`;
                 AND (
                     first_name LIKE ? 
                     OR last_name LIKE ? 
-                    OR CONCAT(first_name, ' ', last_name) LIKE ?
+                    OR CONCAT(first_name, ' ', last_name) LIKE ? 
                     OR REPLACE(CONCAT(first_name, ' ', last_name), ' ', '') LIKE ?
                 )`;
 
@@ -165,7 +165,7 @@ LIMIT 1;`;
       if (district === "Huataphan") {
         params.push("หัวตะพาน");
       } else if (district === "Taiburi") {
-        params.push("ไทรบุรี");
+        params.push("ไทยบุรี");
       } else {
         params.push(district); // สำหรับเขตที่ไม่ตรงกับเงื่อนไขที่กำหนด
       }
@@ -173,16 +173,18 @@ LIMIT 1;`;
 
     // Query เพื่อนับจำนวนข้อมูลทั้งหมดหลังกรอง
     const maxLimitQuery = `
-        SELECT COUNT(ID_CARD) as Total 
+        SELECT COUNT(citizen.ID_CARD) as Total 
         FROM citizen
+        LEFT JOIN prefix ON citizen.prefix_id = prefix.prefix_id
         ${whereClause};
     `;
     const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery, params);
 
     // Query เพื่อดึงข้อมูลที่กรองแล้ว
     const query = `
-        SELECT * 
+        SELECT citizen.*, prefix.prefix_name
         FROM citizen
+        LEFT JOIN prefix ON citizen.prefix_id = prefix.prefix_id
         ${whereClause}
         ORDER BY soi
         LIMIT ? OFFSET ?;
@@ -310,25 +312,73 @@ LIMIT 1;`;
     };
   },
 
-  citizenHistoryAmountPage: async (page, size) => {
+  citizenHistoryAmountPage: async (page, size, filters = {}) => {
     const routePage = parseInt(page);
-    const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า (default = 10)
+    const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า
     const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
+    let { searchType, searchQuery, soi, district } = filters;
 
-    // Query the database to get the maximum allowed limit
-    const maxLimitQuery = `SELECT COUNT(CARD_ID) as Total FROM history_citizen;`;
-    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery);
-    // console.log("max:", parseInt(maxLimitResult.Total));
+    // สร้างเงื่อนไข WHERE สำหรับการกรองข้อมูล
+    let whereClause = "WHERE 1=1";
+    const params = [];
 
-    const query = `
-SELECT * FROM history_citizen
-  ORDER BY id_h_citizen DESC
-  LIMIT ? OFFSET ?;
+    if (searchQuery && searchType) {
+      if (searchType === "NAME") {
+        // เพิ่ม wildcard สำหรับ LIKE
+        const keywordWithSpace = `%${searchQuery}%`; // ค้นหาชื่อที่มีช่องว่าง
+        const keywordWithoutSpace = `%${searchQuery.replace(/\s/g, "")}%`; // ค้นหาชื่อที่ไม่มีช่องว่าง
+
+        whereClause += `
+                AND (
+                    first_name LIKE ? 
+                    OR last_name LIKE ? 
+                    OR CONCAT(first_name, ' ', last_name) LIKE ? 
+                    OR REPLACE(CONCAT(first_name, ' ', last_name), ' ', '') LIKE ?
+                )`;
+
+        // เพิ่มค่าที่กรองใน params
+        params.push(
+          keywordWithSpace, // first_name
+          keywordWithSpace, // last_name
+          keywordWithSpace, // CONCAT(first_name, ' ', last_name)
+          keywordWithoutSpace // REPLACE(CONCAT(first_name, ' ', last_name), ' ', '')
+        );
+      } else if (searchType === "PHONE") {
+        whereClause += ` AND phone_number = ?`;
+        params.push(searchQuery);
+      } else if (searchType === "IDCARD") {
+        whereClause += ` AND CARD_ID = ?`;
+        params.push(searchQuery);
+      }
+    }
+
+    // Query เพื่อนับจำนวนข้อมูลทั้งหมดหลังกรอง
+    const maxLimitQuery = `
+        SELECT COUNT(history_citizen.CARD_ID) as Total 
+        FROM history_citizen
+        LEFT JOIN prefix ON history_citizen.prefix_id = prefix.prefix_id
+        ${whereClause};
     `;
-    const results = await getSearchDataFromDB(query, [limit, offset]);
+    const [maxLimitResult] = await getSearchDataFromDB(maxLimitQuery, params);
+
+    // Query เพื่อดึงข้อมูลที่กรองแล้ว
+    const query = `
+        SELECT history_citizen.*, prefix.prefix_name
+        FROM history_citizen
+        LEFT JOIN prefix ON history_citizen.prefix_id = prefix.prefix_id
+        ${whereClause}
+        ORDER BY soi
+        LIMIT ? OFFSET ?;
+    `;
+    const results = await getSearchDataFromDB(query, [
+      ...params,
+      limit,
+      offset,
+    ]);
+
     return {
       results,
-      totalCount: parseInt(maxLimitResult.Total), // Include the total row count in the response
+      totalCount: parseInt(maxLimitResult.Total), // จำนวนข้อมูลทั้งหมดหลังกรอง
     };
   },
 
@@ -388,6 +438,18 @@ LIMIT 1;
     console.log(resultsHistoryCitizen[0].CARD_ID);
 
     return { resultsHistoryCitizen, resultsCitizen };
+  },
+
+  getAllFileByID: async (CITIZEN_ID) => {
+    const query = `SELECT * FROM document_citizen WHERE CARD_ID= ? ORDER BY dc_id DESC ;`;
+    const results = await getSearchOneDataFromDB(query, [CITIZEN_ID]);
+    return results;
+  },
+  getRelationWithHeir: async (CITIZEN_ID) => {
+    const query = `SELECT * FROM citizen_heir_relationship 
+    WHERE citizen_id = ? ORDER BY id_citizen_heir DESC ;`;
+    const results = await getSearchOneDataFromDB(query, [CITIZEN_ID]);
+    return results;
   },
 };
 

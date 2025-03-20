@@ -34,18 +34,18 @@ const getOneRelationActiveModel = async (status_id) => {
   return results;
 };
 
-const createRelationModel = async (status_data) => {
-  console.log(status_data);
+const createRelationModel = async (relation_data) => {
+  console.log(relation_data);
   const query = `
   INSERT INTO relations (label) 
   VALUES (?);`;
-  const results = await insertDataToDB(query, status_data);
+  const results = await insertDataToDB(query, relation_data);
   return results;
 };
 
 const updateRelationModel = async (values) => {
   const query = `UPDATE relations 
-    SET label = ? 
+    SET label = ?
     WHERE id = ?;`;
   const results = await updateOneDataToDB(query, values);
   return results;
@@ -71,7 +71,6 @@ const landStatusModel = async () => {
 };
 
 const createStatusModel = async (status_data) => {
-  console.log(status_data);
   const query = `
   INSERT INTO land_status (land_status_name) 
   VALUES (?);`;
@@ -158,7 +157,6 @@ const soiModel = async () => {
 
 // --------------------------------------- Start dashboard ---------------------------------------
 const getDashboardModel = async () => {
-
   const query = `
 SELECT 
     lu.usage_id, 
@@ -170,7 +168,7 @@ GROUP BY lu.usage_id;
 `;
 
   const results = await getDataAllFromDB(query);
-  
+
   return results;
 };
 
@@ -178,6 +176,9 @@ const getDashboardTableModel = async () => {
   const query_land = `
 SELECT 
   land.current_soi,
+  land.rai, 
+  land.ngan,
+  land.square_wa,
   SUM(CASE WHEN land.current_land_status = 'LS01' THEN 1 ELSE 0 END) AS current_land_status01,
   SUM(CASE WHEN land.current_land_status = 'LS02' THEN 1 ELSE 0 END) AS current_land_status02,
   SUM(CASE WHEN land.current_land_status = 'LS03' THEN 1 ELSE 0 END) AS current_land_status03,
@@ -185,14 +186,9 @@ SELECT
   SUM(CASE WHEN land.current_land_status = 'LS01' THEN 1 ELSE 0 END) 
     + SUM(CASE WHEN land.current_land_status = 'LS02' THEN 1 ELSE 0 END) 
     + SUM(CASE WHEN land.current_land_status = 'LS03' THEN 1 ELSE 0 END) 
-    + SUM(CASE WHEN land.current_land_status = 'LS04' THEN 1 ELSE 0 END) AS total_land_status_count,
-  SUM(COALESCE(land.rai, 0)) 
-    + (SUM(COALESCE(land.ngan, 0)) / 4) 
-    + (SUM(COALESCE(land.square_wa, 0)) / 400) AS total_area_in_rai
+    + SUM(CASE WHEN land.current_land_status = 'LS04' THEN 1 ELSE 0 END) AS total_land_status_count
 FROM land
 JOIN land_status ON land_status.ID_land_status = land.current_land_status
-WHERE land.active = '1' 
-  AND land_status.actived = '1'
 GROUP BY land.current_soi
 ORDER BY land.current_soi;
 `;
@@ -206,9 +202,9 @@ const getDashboardCitizenTableModel = async () => {
   SELECT 
     ct.soi,
     SUM(CASE WHEN ct.district = 'หัวตะพาน' THEN 1 ELSE 0 END) 
-      + SUM(CASE WHEN ct.district = 'ไทรบุรี' THEN 1 ELSE 0 END) AS total_citizens,  -- นับจำนวนราษฎรทั้งหมดในแต่ละ soi
+      + SUM(CASE WHEN ct.district = 'ไทยบุรี' THEN 1 ELSE 0 END) AS total_citizens,  -- นับจำนวนราษฎรทั้งหมดในแต่ละ soi
     SUM(CASE WHEN ct.district = 'หัวตะพาน' THEN 1 ELSE 0 END) AS huataphan,
-    SUM(CASE WHEN ct.district = 'ไทรบุรี' THEN 1 ELSE 0 END) AS taiburi,
+    SUM(CASE WHEN ct.district = 'ไทยบุรี' THEN 1 ELSE 0 END) AS taiburi,
     SUM(CASE WHEN ct.gender = '1' THEN 1 ELSE 0 END) AS male,
     SUM(CASE WHEN ct.gender = '0' THEN 1 ELSE 0 END) AS female
   FROM citizen as ct
@@ -221,17 +217,40 @@ const getDashboardCitizenTableModel = async () => {
 };
 
 const getOneDashboardModel = async (soi) => {
-  const query = `
-  SELECT 
-      lu.usage_id, 
-      CAST(COUNT(lu.usage_id) AS SIGNED) AS count
-  FROM land
-  JOIN land_land_usage AS lu ON land.id_land = lu.land_ID
-  WHERE land.active = '1' AND land.current_soi = ? AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02')
-  GROUP BY lu.usage_id;
-  `;
-  const results = await getDataAllWithOneFromDB(query, [soi]);
-  console.log(results)
+  let query;
+  let params = [];
+
+  if (soi === -1) {
+    // ไม่กรอง `land.current_soi`
+    query = `
+    SELECT 
+        lu.usage_id, 
+        CAST(COUNT(lu.usage_id) AS SIGNED) AS count
+    FROM land
+    JOIN land_land_usage AS lu ON land.id_land = lu.land_ID
+    WHERE land.active = '1' 
+    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02') 
+    GROUP BY lu.usage_id;
+    `;
+  } else {
+    // กรองตาม `soi`
+    query = `
+    SELECT 
+        lu.usage_id, 
+        CAST(COUNT(lu.usage_id) AS SIGNED) AS count
+    FROM land
+    JOIN land_land_usage AS lu ON land.id_land = lu.land_ID
+    WHERE land.active = '1' 
+    AND land.current_soi = ? 
+    AND (land.current_land_status = 'LS01' OR land.current_land_status = 'LS02') 
+    GROUP BY lu.usage_id;
+    `;
+    params.push(soi); // เพิ่ม `soi` เป็นพารามิเตอร์ใน query
+  }
+
+  console.log("test:", soi);
+  const results = await getDataAllWithOneFromDB(query, params);
+  console.log(results);
   return results;
 };
 
@@ -280,6 +299,23 @@ const updateOneLandUsageModel = async (values) => {
   return results;
 };
 
+const createLandUsageModel = async (land_usage_name) => {
+  console.log("land_usage_name:", land_usage_name);
+  const query = `
+  INSERT INTO land_usage (land_usage_name) 
+  VALUES (?);`;
+  const results = await insertDataToDB(query, [land_usage_name]);
+  return results;
+};
+
+const deleteLandUsageModel = async (land_usage_data) => {
+  const query = `UPDATE land_usage 
+    SET actived = ? 
+    WHERE id_usage = ?;`;
+  const results = await updateOneDataToDB(query, land_usage_data);
+  return results;
+};
+
 // --------------------------------------- end land usage ---------------------------------------
 
 module.exports = {
@@ -312,4 +348,6 @@ module.exports = {
   updateOneLandUsageModel,
   getOneLandUsageActiveModel,
   getOneLandUseModelV2,
+  createLandUsageModel,
+  deleteLandUsageModel,
 };
