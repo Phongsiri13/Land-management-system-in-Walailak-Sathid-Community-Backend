@@ -11,16 +11,15 @@ const fs = require("fs");
 const path = require("path");
 const citizenController = require("../controllers/citizen_controller");
 const { prefixesController } = require("../controllers/prefix_controller");
+const { authenticateJWT } = require("../middlewares/authJWT");
+const {  authorizeRoles } = require("../middlewares/roleMiddleware");
 
 const router = express.Router();
 
 // -------------------------------------------- GET --------------------------------------------
-router.get("/", (req, res) => {
-  res.send("People page");
-});
 
-// update
-router.put("/:id", citizenController.updateCitizenCTL);
+// update citizen
+router.put("/:id", authenticateJWT, authorizeRoles("R001"), citizenController.updateCitizenCTL);
 
 // ค้นหาข้อมูลโดยใช้ LIKE
 router.get("/search", async (req, res) => {
@@ -53,19 +52,19 @@ router.get("/search", async (req, res) => {
 // Search by first-name & last-name
 router.get("/qf", citizenController.getCitizenByFullNameCTL);
 // land holding
-router.get("/holding/:id", citizenController.getOneCitizenLandHoldCTL);
-router.get("/history_citizen/:id", citizenController.getOneHistoryCitizenCTL);
-router.get("/fullname/:name", citizenController.getOneHistoryCitizenCTL);
+router.get("/holding/:id", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getOneCitizenLandHoldCTL);
+router.get("/history_citizen/:id", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getOneHistoryCitizenCTL);
+router.get("/fullname/:name", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getOneHistoryCitizenCTL);
 // get citizen amount
-router.get("/:amount/:page", citizenController.getCitizenAmountPageCTL);
-router.get("/filter/:amount/:page", citizenController.getCitizenFilterAmountPageCTL); // ไม่ใช้แล้ว
-router.get("/history_citizen/:amount/:page", citizenController.getCitizenHistoryAmountPageCTL);
+router.get("/:amount/:page", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getCitizenAmountPageCTL);
+router.get("/filter/:amount/:page", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getCitizenFilterAmountPageCTL); // ไม่ใช้แล้ว
+router.get("/history_citizen/:amount/:page", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getCitizenHistoryAmountPageCTL);
 
 router.get("/prefix", prefixesController);
 
-router.get("/:id_card", citizenController.getCitizenIdCTL);
+router.get("/:id_card", authenticateJWT, authorizeRoles("R001", "R002"), citizenController.getCitizenIdCTL);
 
 // For adding a citizen
-router.post("/", citizenController.addCitizenController);
+router.post("/", authenticateJWT, authorizeRoles("R001"), citizenController.addCitizenController);
 
 module.exports = router;

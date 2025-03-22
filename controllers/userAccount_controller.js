@@ -279,9 +279,10 @@ const loginCTL = async (req, res) => {
 
     if (updatedUser) {
       // Send the JWT token as a cookie
-      res.cookie("jwt", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Use 'secure' in production for HTTPS
+      res.cookie("token", token, {
+        httpOnly: false, // ใช้ `true` บน HTTPS
+        // secure: process.env.NODE_ENV === "production", // Use 'secure' in production for HTTPS
+        sameSite: "lax", // ป้องกัน CSRF
         maxAge: 3600000, // 1 hour
       });
 

@@ -11,19 +11,20 @@ const {
     delUserCTL
 } = require("../controllers/userAccount_controller");
 
-const { pool } = require("../config/config_db");
+const { authenticateJWT } = require("../middlewares/authJWT");
+const { authorizeRoles } = require("../middlewares/roleMiddleware");
 
 const router = express.Router();
 
 // roles
-router.get("/user", getAllUsers);
-router.get("/role/active/:id", getRoleActiveCTL);
-router.get("/role/:id", getOneRoleCTL);
-router.post("/role/create", createRoleCTL);
-router.put("/user/personal/:id", updatePersonalUserCTL);
-router.put("/role/del/:id", deleteRoleCTL);
-router.put("/user/del/:id", delUserCTL);
-router.put("/role/:id", updateRoleCTL);
+router.get("/user", authenticateJWT,authorizeRoles("R003"), getAllUsers);
+router.get("/role/active/:id", authenticateJWT,authorizeRoles("R003"), getRoleActiveCTL);
+router.get("/role/:id", authenticateJWT,authorizeRoles("R003"), getOneRoleCTL);
+router.post("/role/create", authenticateJWT,authorizeRoles("R003"), createRoleCTL);
+router.put("/user/personal/:id", authenticateJWT,authorizeRoles("R003"), updatePersonalUserCTL);
+router.put("/role/del/:id", authenticateJWT,authorizeRoles("R003"), deleteRoleCTL);
+router.put("/user/del/:id", authenticateJWT,authorizeRoles("R003"), delUserCTL);
+router.put("/role/:id", authenticateJWT,authorizeRoles("R003"), updateRoleCTL);
 // -------------------------------------------- END --------------------------------------------
 
 module.exports = router;

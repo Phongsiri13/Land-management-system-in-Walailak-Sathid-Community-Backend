@@ -3,17 +3,19 @@ const express = require("express");
 const { landUsageCTL, updateOneLandUsageCTL, getOnelandUsageCTL
     ,getOneLandUsageActiveCTL, createLandUsageCTL, delOneLandUsageCTL
 } = require("../controllers/landUse_controller");
-const { pool } = require("../config/config_db");
+const AUTH_ROLE = require('../middlewares/authName')
+const { authenticateJWT } = require("../middlewares/authJWT");
+const { authorizeRoles } = require("../middlewares/roleMiddleware");
 
 const router = express.Router();
 
 router.get("/", landUsageCTL);
 router.get("/:id", getOnelandUsageCTL);
-router.post("/create", createLandUsageCTL);
-// DELETE route to delete a record by ID
 router.get("/active/:id", getOneLandUsageActiveCTL);
-router.put("/:id", updateOneLandUsageCTL);
-router.put("/active/:id", delOneLandUsageCTL);
+router.post("/create", authenticateJWT, authorizeRoles("R001"), createLandUsageCTL);
+// DELETE route to delete a record by ID
+router.put("/:id", authenticateJWT, authorizeRoles("R001"), updateOneLandUsageCTL);
+router.put("/active/:id", authenticateJWT, authorizeRoles("R001"), delOneLandUsageCTL);
 // -------------------------------------------- END --------------------------------------------
 
 module.exports = router;

@@ -214,10 +214,7 @@ JOIN
   },
   addLand: async (landData) => {
     console.log("Received landData:", landData);
-
-    const connection = await pool.getConnection();
     try {
-      await connection.beginTransaction();
 
       // Insert data into the `land` table
       const query_land = `
@@ -228,36 +225,10 @@ JOIN
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      await connection.query(query_land, landData);
+      const result = await insertDataToDB(query_land, landData);
 
-      // Generate land_id by combining tf_number and number
-      const land_id = landData[2] + landData[0]; // tf_number + number
-      console.log("Generated land_id:", land_id);
-
-      // Insert data into the `land_use` table
-      const query_land_use = `
-        INSERT INTO land_use (
-          land_id, rubber_tree, fruit_orchard, livestock_farming, other, details
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `;
-
-      const land_use_values = [land_id, "0", "0", "0", "0", null];
-      await connection.query(query_land_use, land_use_values);
-
-      await connection.commit();
-
-      console.log(
-        "✅ Transaction Success: Land and land use data added successfully."
-      );
-      return {
-        statusCode: 200,
-        status: true,
-        message: "เพิ่มข้อมูลที่ดินและการใช้ที่ดินเรียบร้อยแล้ว",
-      };
+      return result
     } catch (err) {
-      await connection.rollback();
-
-      console.error("❌ Transaction Error:", err.message);
       if (err.code === "ER_DUP_ENTRY") {
         // MySQL error 1062
         console.error("Duplicate Entry Error:", err.message);
@@ -268,14 +239,11 @@ JOIN
         };
       }
 
-      console.error("❌ Transaction Error:", err.message);
       throw {
         statusCode: 500, // Internal Server Error
         status: false,
         message: "ระบบขัดข้อง กรุณาลองใหม่ภายหลัง",
       };
-    } finally {
-      connection.release();
     }
   },
   updateLandOne: async (landData, IDLAND) => {
@@ -384,21 +352,6 @@ JOIN
     } finally {
       connection.release(); // คืน Connection กลับ Pool
     }
-  },
-  updateLandUseOne: async (landData) => {
-    // console.log("land_use:", landData);
-    const query = `
-    UPDATE land_use
-    SET 
-      rubber_tree = ?, 
-      fruit_orchard = ?, 
-      livestock_farming = ?, 
-      other = ?, 
-      details = ?
-    WHERE land_id = ? AND land_use_id = ?;
-  `;
-    const results = await updateOneDataToDB(query, landData);
-    return results;
   },
   getLandActive: async (land_id) => {
     const query = `SELECT active FROM land WHERE id_land= ? LIMIT 1;`;

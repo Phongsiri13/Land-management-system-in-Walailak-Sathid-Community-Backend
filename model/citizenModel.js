@@ -316,7 +316,7 @@ LIMIT 1;`;
     const routePage = parseInt(page);
     const limit = parseInt(size); // จำนวนข้อมูลต่อหน้า
     const offset = (routePage - 1) * size; // คำนวณตำแหน่งเริ่มต้นของข้อมูล
-    let { searchType, searchQuery, soi, district } = filters;
+    let { searchType, searchQuery} = filters;
 
     // สร้างเงื่อนไข WHERE สำหรับการกรองข้อมูล
     let whereClause = "WHERE 1=1";
@@ -367,7 +367,7 @@ LIMIT 1;`;
         FROM history_citizen
         LEFT JOIN prefix ON history_citizen.prefix_id = prefix.prefix_id
         ${whereClause}
-        ORDER BY soi
+        ORDER BY history_citizen.id_h_citizen DESC
         LIMIT ? OFFSET ?;
     `;
     const results = await getSearchDataFromDB(query, [
@@ -413,20 +413,20 @@ LIMIT 1;`;
 
   getOneCitizenHistory: async (id_card) => {
     const query_current_history = `
-SELECT hc.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
-FROM history_citizen as hc
-LEFT JOIN prefix ON hc.prefix_id = prefix.prefix_id
-WHERE hc.id_h_citizen = ?
-LIMIT 1;
-`;
+    SELECT hc.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
+    FROM history_citizen as hc
+    LEFT JOIN prefix ON hc.prefix_id = prefix.prefix_id
+    WHERE hc.id_h_citizen = ?
+    LIMIT 1;
+    `;
 
     const query = `
-SELECT citizen.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
-FROM citizen
-LEFT JOIN prefix ON citizen.prefix_id = prefix.prefix_id
-WHERE citizen.ID_CARD = ?
-LIMIT 1;
-`;
+    SELECT citizen.*, COALESCE(prefix.prefix_name, 'N/A') AS prefix_name
+    FROM citizen
+    LEFT JOIN prefix ON citizen.prefix_id = prefix.prefix_id
+    WHERE citizen.ID_CARD = ?
+    LIMIT 1;
+    `;
 
     console.log("query:", query_current_history);
     const resultsHistoryCitizen = await getSearchDataFromDB(
@@ -435,7 +435,7 @@ LIMIT 1;
     );
     const IDCARD = resultsHistoryCitizen[0].CARD_ID;
     const resultsCitizen = await getSearchDataFromDB(query, IDCARD);
-    console.log(resultsHistoryCitizen[0].CARD_ID);
+    // console.log(resultsHistoryCitizen[0].CARD_ID);
 
     return { resultsHistoryCitizen, resultsCitizen };
   },

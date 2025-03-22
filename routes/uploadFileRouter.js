@@ -8,6 +8,9 @@ const landModel = require("../model/landModel");
 const citizenModel = require("../model/citizenModel");
 const { removeDataToDB } = require("../config/config_db");
 
+const { authenticateJWT } = require("../middlewares/authJWT");
+const { authorizeRoles } = require("../middlewares/roleMiddleware");
+
 const router = express.Router();
 
 // All files are uploads folder
@@ -377,7 +380,7 @@ const uploadLandDocumentDelete = async (req, res) => {
   }
 };
 
-router.get("/live_files", async (req, res) => {
+router.get("/live_files", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   console.log("query:", req.query.land_id);
   if (!req.query.land_id) {
     return res.send("query is wrong");
@@ -397,7 +400,7 @@ router.get("/live_files", async (req, res) => {
   }
 });
 
-router.get("/document_files", async (req, res) => {
+router.get("/document_files", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   console.log("query:", req.query.land_id);
   if (!req.query.land_id) {
     return res.send("query is wrong");
@@ -417,7 +420,7 @@ router.get("/document_files", async (req, res) => {
   }
 });
 
-router.get("/citizen/document_files", async (req, res) => {
+router.get("/citizen/document_files", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   console.log("query:", req.query.citizen_id);
   if (!req.query.citizen_id) {
     return res.send("query is wrong");
@@ -438,7 +441,7 @@ router.get("/citizen/document_files", async (req, res) => {
 });
 
 // ดาวโหลดภาพที่อยู่อาศัย
-router.get("/download_live/:filePath", async (req, res) => {
+router.get("/download_live/:filePath", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   const filePath = req.params.filePath; // รับชื่อไฟล์จาก URL
   console.log("filename:", filePath);
   const fullPath = path.join("uploads", "land_lives", filePath);
@@ -461,7 +464,7 @@ router.get("/download_live/:filePath", async (req, res) => {
 });
 
 // ดาวโหลดเอกสารราษฎร
-router.get("/download_document/:filePath", async (req, res) => {
+router.get("/download_document/:filePath", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   const filePath = req.params.filePath; // รับชื่อไฟล์จาก URL
   console.log("filename:", filePath);
   const fullPath = path.join("uploads", "citizen_documents", filePath);
@@ -484,7 +487,7 @@ router.get("/download_document/:filePath", async (req, res) => {
 });
 
 // ดาวโหลดเอกสาร
-router.get("/download_land_document/:filePath", async (req, res) => {
+router.get("/download_land_document/:filePath", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   const filePath = req.params.filePath; // รับชื่อไฟล์จาก URL
   console.log("filename:", filePath);
   const fullPath = path.join("uploads", "documents", filePath);
@@ -506,7 +509,7 @@ router.get("/download_land_document/:filePath", async (req, res) => {
   }
 });
 
-router.get("/citizen/document_files/:filePath", async (req, res) => {
+router.get("/citizen/document_files/:filePath", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   const filePath = req.params.filePath; // รับชื่อไฟล์จาก URL
   console.log("filename:", filePath);
   const fullPath = path.join("uploads", "documents", filePath);
@@ -528,7 +531,7 @@ router.get("/citizen/document_files/:filePath", async (req, res) => {
   }
 });
 
-router.get("/citizen_documents/:filePath", async (req, res) => {
+router.get("/citizen_documents/:filePath", authenticateJWT,authorizeRoles("R001", "R002"), async (req, res) => {
   const filePath = req.params.filePath; // รับชื่อไฟล์จาก URL
   console.log("filename:", filePath);
   const fullPath = path.join("uploads", "citizen_documents", filePath);
@@ -550,12 +553,12 @@ router.get("/citizen_documents/:filePath", async (req, res) => {
   }
 });
 
-router.post("/land/live", uploadLive);
-router.post("/land/documents", uploadLandDocument);
-router.post("/citizen/documents", uploadCitizenDocument);
+router.post("/land/live", authenticateJWT,authorizeRoles("R001"),uploadLive);
+router.post("/land/documents", authenticateJWT,authorizeRoles("R001"),uploadLandDocument);
+router.post("/citizen/documents", authenticateJWT,authorizeRoles("R001"),uploadCitizenDocument);
 
-router.delete("/land/live/:id", uploadLiveDelete);
-router.delete("/land/document/:id", uploadLandDocumentDelete);
-router.delete("/citizen/:id", uploadCitizenDelete);
+router.delete("/land/live/:id", authenticateJWT,authorizeRoles("R001"),uploadLiveDelete);
+router.delete("/land/document/:id", authenticateJWT,authorizeRoles("R001"),uploadLandDocumentDelete);
+router.delete("/citizen/:id", authenticateJWT,authorizeRoles("R001"),uploadCitizenDelete);
 
 module.exports = router;

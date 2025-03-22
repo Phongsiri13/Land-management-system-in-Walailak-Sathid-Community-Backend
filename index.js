@@ -1,7 +1,9 @@
-require('dotenv').config();
+require("dotenv").config();
 const express = require("express");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const { authenticateJWT } = require("./middlewares/authJWT");
+const { authorizeRoles } = require("./middlewares/roleMiddleware");
 
 // routers
 const loginRouter = require("./routes/loginRouter");
@@ -29,11 +31,11 @@ app.use(
   })
 );
 
-app.use(cookieParser()); // ใช้ cookie-parser เพื่อดึง cookies จาก request
-app.use(express.json());
+app.use(cookieParser()); // อนุญาติให้ส่ง cookie-parser เพื่อดึง cookies จาก request
+app.use(express.json()); 
 
 // ให้บริการไฟล์จากโฟลเดอร์ 'uploads'
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", authenticateJWT,authorizeRoles("R001", "R002"), express.static("uploads"));
 
 // Data management
 app.use("/register", registerRouter);
@@ -48,10 +50,9 @@ app.use("/upload_file", uploadFileRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/login", loginRouter);
 // Use admin router
-app.use('/admin', adminRouter);
-
+app.use("/admin", adminRouter);
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+  console.log(`Server is running at ${PORT}`);
 });

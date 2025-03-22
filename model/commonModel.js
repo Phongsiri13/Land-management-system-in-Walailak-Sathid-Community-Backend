@@ -258,13 +258,6 @@ const getOneDashboardModel = async (soi) => {
 
 // --------------------------------------- Start point land usage ---------------------------------------
 
-// ไม่ใช้แล้ว
-const getOneLandUse = async (land_id) => {
-  const query = `SELECT * FROM land_use WHERE land_id = ?;`;
-  const results = await getSearchOneDataFromDB(query, land_id);
-  return results;
-};
-
 const getOneLandUseModelV2 = async (land_id) => {
   const query = `SELECT * FROM land_land_usage WHERE land_ID = ?;`;
   const results = await getSearchOneDataFromDB(query, land_id);
@@ -336,7 +329,6 @@ module.exports = {
   createRelationModel,
   updateRelationModel,
   deleteRelationModel,
-  getOneLandUse,
   getOneStatusActiveModel,
   getOneRelationActiveModel,
   getDashboardModel,

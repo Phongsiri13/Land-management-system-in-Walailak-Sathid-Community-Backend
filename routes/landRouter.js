@@ -2,8 +2,6 @@
 const express = require("express");
 // const mysql = require("mysql2");
 const {
-  getDataFromDB,
-  insertDataToDB,
   getSearchDataFromDB,
 } = require("../config/config_db");
 const router = express.Router();
@@ -14,19 +12,32 @@ const {
   getLandHistoryAmountPageCTL,
   getLandIdCTL,
   updateLandCTL,
-  getLandUseByIdCTL,
-  getLandActiveCTL,
-  updateLandUseCTL,
   getLandHistoryOneCompareCTL,
   getLandUseByIdCTL_V2,
   updateAndAddLandUseCTL,
+  getLandActiveCTL
 } = require("../controllers/land_controller");
 const {
   landStatusController,
 } = require("../controllers/landStatus_controller");
 const { soiController } = require("../controllers/soi_controller");
+const AUTH_ROLE = require('../middlewares/authName')
+const { authenticateJWT } = require("../middlewares/authJWT");
+const { authorizeRoles } = require("../middlewares/roleMiddleware");
 
-router.get("/complete_land/:id", (req, res) => {
+function convertNganAndSquareWaToRai(ngan, squareWa) {
+  const totalSquareWa = ngan * 100 + squareWa; // แปลงงานและตารางวาเป็นตารางวาทั้งหมด
+  const rai = totalSquareWa / 400; // แปลงตารางวาเป็นไร่ (1 ไร่ = 400 ตารางวา)
+  return rai; // ส่งค่าที่แปลงเสร็จออกมา
+}
+
+function concealmentFormat(phoneNumber, word_count = 6) {
+  const regex = new RegExp(`^(\\d{${word_count}})(\\d{4})$`);
+  return phoneNumber.replace(regex, `xxxxxx$2`);
+}
+
+// 
+router.get("/complete_land/:id", authenticateJWT, (req, res) => {
   // Get the id from the URL parameter
   const landId = req.params.id;
   const land_and_people_data = [];
@@ -111,18 +122,7 @@ WHERE l.id_land = ?;
   );
 });
 
-function convertNganAndSquareWaToRai(ngan, squareWa) {
-  const totalSquareWa = ngan * 100 + squareWa; // แปลงงานและตารางวาเป็นตารางวาทั้งหมด
-  const rai = totalSquareWa / 400; // แปลงตารางวาเป็นไร่ (1 ไร่ = 400 ตารางวา)
-  return rai; // ส่งค่าที่แปลงเสร็จออกมา
-}
-
-function concealmentFormat(phoneNumber, word_count = 6) {
-  const regex = new RegExp(`^(\\d{${word_count}})(\\d{4})$`);
-  return phoneNumber.replace(regex, `xxxxxx$2`);
-}
-
-// Search route
+// Search route for user
 router.get("/search", async (req, res) => {
   const query = req.query.q; // รับค่า query 'q' ที่ส่งมาใน URL
   if (!query) {
@@ -163,20 +163,19 @@ router.get("/search", async (req, res) => {
 });
 router.get("/sois", soiController);
 router.get("/land_status", landStatusController);
-router.get("/:id", getLandIdCTL);
+router.get("/:id", authenticateJWT, authorizeRoles("R001", "R002"), getLandIdCTL);
 // Get One
-router.get("/active/:id", getLandActiveCTL);
-router.get("/land_use/:id", getLandUseByIdCTL);
-router.get("/v2/land_use/:id", getLandUseByIdCTL_V2);
-router.get("/history_land/:id", getLandHistoryOneCompareCTL);
-router.get("/history_land/:amount/:page", getLandHistoryAmountPageCTL);
-router.put("/land_use/:id", updateLandUseCTL);
-router.get("/complete_land/:amount/:page", getLandAmountPageCTL);
+router.get("/active/:id", authenticateJWT,authorizeRoles("R001", "R002"), getLandActiveCTL);
+router.get("/v2/land_use/:id", authenticateJWT,authorizeRoles("R001", "R002"), getLandUseByIdCTL_V2);
+router.get("/history_land/:id", authenticateJWT,authorizeRoles("R001", "R002"), getLandHistoryOneCompareCTL);
+router.get("/history_land/:amount/:page", authenticateJWT,authorizeRoles("R001", "R002"), getLandHistoryAmountPageCTL);
 
-router.post("/", addLandController);
-router.put("/v2/update_land_use/:landId", updateAndAddLandUseCTL);
+router.get("/complete_land/:amount/:page", authenticateJWT,authorizeRoles("R001", "R002"), getLandAmountPageCTL);
+
+router.post("/", authenticateJWT,authorizeRoles("R001"), addLandController);
+router.put("/v2/update_land_use/:landId", authenticateJWT,authorizeRoles("R001"), updateAndAddLandUseCTL);
 // Update the land is selected
-router.put("/:id", updateLandCTL);
-router.delete("/active/:id", deleteLandByActiveCTL);
+router.put("/:id", authenticateJWT,authorizeRoles("R001"), updateLandCTL);
+router.delete("/active/:id", authenticateJWT,authorizeRoles("R001"), deleteLandByActiveCTL);
 
 module.exports = router;

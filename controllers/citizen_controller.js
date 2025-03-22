@@ -216,7 +216,7 @@ const getOneCitizenLandHoldCTL = async (req, res) => {
 
 const getOneHistoryCitizenCTL = async (req, res) => {
   const { id } = req.params;
-  console.log("id:", id);
+  // console.log("id:", id);
 
   if (!id) {
     return res
