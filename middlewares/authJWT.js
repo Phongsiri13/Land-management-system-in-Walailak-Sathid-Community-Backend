@@ -1,14 +1,15 @@
 const jwt = require("jsonwebtoken");
 const { getDataAllWithOneFromDB } = require("../config/config_db");
+const system_config = require('../config/config_system')
 
-const SECRET_KEY = process.env.SECRET_KEY; // ✅ ใช้ environment variable
+const SECRET_KEY = system_config.SECRET_KEY; // ✅ ใช้ environment variable
 
 const authenticateJWT = async (req, res, next) => {
   // console.log('req.cookies:', req.cookies);  
   try {
     const token = req.cookies.token; // ดึง JWT จาก Cookie
     if (!token) {
-      return res.status(401).json({ message: "Access denied. No token provided." });
+      return res.status(401).json({ message: "Access denied. กรุณาเข้าสู่ระบบใหม่อีกครั้ง!." });
     }
 
     // ใช้ Promise แทน Callback
@@ -19,7 +20,7 @@ const authenticateJWT = async (req, res, next) => {
       });
     });
 
-    console.log("Decoded User:", user);
+    // console.log("Decoded User:", user);
 
     // ดึงข้อมูลจากฐานข้อมูล
     const query = `SELECT users.id_role, roles.role_name 

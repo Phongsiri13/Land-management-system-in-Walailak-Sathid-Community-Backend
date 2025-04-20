@@ -1,5 +1,5 @@
-require("dotenv").config();
 const express = require("express");
+const system_config = require('./config/config_system')
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const { authenticateJWT } = require("./middlewares/authJWT");
@@ -21,7 +21,7 @@ const adminRouter = require("./routes/adminRouter");
 
 // create API gateway
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = system_config.PORT || 3000;
 
 // Cors
 app.use(

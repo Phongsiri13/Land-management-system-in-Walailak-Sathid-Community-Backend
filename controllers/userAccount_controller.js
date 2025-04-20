@@ -1,4 +1,5 @@
-require("dotenv").config();
+const system_config = require('../config/config_system');
+
 // Model
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
@@ -9,7 +10,7 @@ const {
 } = require("../validation/userSchema");
 const userModel = require("../model/userModel");
 
-const SECRET_KEY = process.env.SECRET_KEY;
+const SECRET_KEY = system_config.SECRET_KEY;
 
 const getAllUsers = async (req, res) => {
   const data = req.body;
@@ -207,7 +208,7 @@ const registerCTL = async (req, res) => {
 
 const loginCTL = async (req, res) => {
   const data = req.body;
-  console.log("data:", data);
+  // console.log("data:", data);
 
   try {
     // ตรวจสอบความถูกต้องของข้อมูลตาม schema
@@ -251,7 +252,7 @@ const loginCTL = async (req, res) => {
     const USERNAME = user_model[0].username;
     const USER_ID = user_model[0].user_id;
     const USER_ROLE = user_model[0].id_role;
-    console.log("::::", USER_ROLE);
+    // console.log("::::", USER_ROLE);
 
     // send jwt token
     const token = jwt.sign(

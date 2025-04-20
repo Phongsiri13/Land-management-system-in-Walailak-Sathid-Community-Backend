@@ -63,7 +63,7 @@ const UserModel = {
       "SELECT user_id, username, password, id_role FROM users WHERE username = ? AND user_actived = '1' LIMIT 1;";
 
     try {
-      // เรียกใช้ insertDataToDB เพื่อแทรกข้อมูล
+      // เรียกใช้ insertDataToDB เพื่อแทรกข้อมูล and Prepared Statements (Parameterized Queries)
       const results = await getDataAllWithOneFromDB(query, [user_login]);
       // console.log("results:", results);
       return results; // ส่งคืนผลลัพธ์ที่ได้
